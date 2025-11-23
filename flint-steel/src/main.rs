@@ -1,27 +1,47 @@
-use std::env;
-use std::path::Path;
-use flint_core::index::Index;
 use dotenvy::dotenv;
+use flint_core::index::Index;
+use flint_core::loader::TestLoader;
+use std::env;
+use std::path::{Path, PathBuf};
 
 const TEST_PATH: &str = "./test";
+
 fn main() {
     dotenv().ok();
     let args: Vec<String> = env::args().collect();
-    let mut test_paths: Vec<String> = vec![];
+    let test_paths: Vec<PathBuf>;
     if args.len() > 1 {
         match args[1].as_str() {
             "index" => {
                 println!("index");
-                if let Err(err) = Index::generate_index(&Path::new(TEST_PATH)) {
-                    println!("error while generating index: {}", err);
+                match TestLoader::new(Path::new(TEST_PATH), true) {
+                    Ok(mut loader) => match loader.collect_all_test_files() {
+                        Ok(test_files) => {
+                            if let Err(err) = loader.get_index().generate_index(&test_files) {
+                                eprintln!("{}", err);
+                            }
+                        }
+                        Err(err) => {
+                            eprintln!("{}", err);
+                        }
+                    },
+                    Err(err) => {
+                        println!("error while loading test files: {}", err);
+                    }
                 }
+                return;
             }
             _ => {
                 println!("Will run tests on a specific scope");
-                match Index::load_tagged_tests_paths(&args[1..]) {
-                    Ok(_test_paths) => {
-                        test_paths = _test_paths;
-                    }
+                match TestLoader::new(Path::new(TEST_PATH), true) {
+                    Ok(loader) => match loader.collect_by_tags(&args[1..]) {
+                        Ok(_test_paths) => {
+                            test_paths = _test_paths;
+                        }
+                        Err(err) => {
+                            println!("error while loading test files: {}", err);
+                        }
+                    },
                     Err(err) => {
                         println!("error while loading test files: {}", err);
                     }
@@ -31,12 +51,18 @@ fn main() {
     } else {
         // Loads all test from the index
         println!("Will run all tests");
-        match Index::get_all_tests_paths() {
-            Ok(_test_paths) => test_paths = _test_paths,
+        match TestLoader::new(Path::new(TEST_PATH), true) {
+            Ok(loader) => match loader.collect_all_test_files() {
+                Ok(_test_paths) => {
+                    test_paths = _test_paths;
+                }
+                Err(err) => {
+                    println!("error while loading test files: {}", err);
+                }
+            },
             Err(err) => {
-                println!("error while getting all_tests_paths: {}", err);
+                println!("error while loading test files: {}", err);
             }
         }
     }
 }
-
