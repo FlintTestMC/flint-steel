@@ -1,5 +1,4 @@
 use dotenvy::dotenv;
-use flint_core::index::Index;
 use flint_core::loader::TestLoader;
 use std::env;
 use std::path::{Path, PathBuf};
@@ -14,20 +13,8 @@ fn main() {
         match args[1].as_str() {
             "index" => {
                 println!("index");
-                match TestLoader::new(Path::new(TEST_PATH), true) {
-                    Ok(mut loader) => match loader.collect_all_test_files() {
-                        Ok(test_files) => {
-                            if let Err(err) = loader.get_index().generate_index(&test_files) {
-                                eprintln!("{}", err);
-                            }
-                        }
-                        Err(err) => {
-                            eprintln!("{}", err);
-                        }
-                    },
-                    Err(err) => {
-                        println!("error while loading test files: {}", err);
-                    }
+                if let Err(err) = TestLoader::new(Path::new(TEST_PATH), true) {
+                    println!("error while loading test files: {}", err);
                 }
                 return;
             }
