@@ -1,5 +1,4 @@
 use dotenvy::dotenv;
-use flint_core::index::Index;
 use flint_core::loader::TestLoader;
 use std::env;
 use std::path::{Path, PathBuf};
