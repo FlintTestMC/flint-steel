@@ -27,10 +27,12 @@ fn main() {
                         }
                         Err(err) => {
                             println!("error while loading test files: {}", err);
+                            return;
                         }
                     },
                     Err(err) => {
                         println!("error while loading test files: {}", err);
+                        return;
                     }
                 }
             }
@@ -45,11 +47,16 @@ fn main() {
                 }
                 Err(err) => {
                     println!("error while loading test files: {}", err);
+                    return;
                 }
             },
             Err(err) => {
                 println!("error while loading test files: {}", err);
+                return;
             }
         }
+    }
+    for test_path in test_paths {
+        println!("{}", test_path.display());
     }
 }

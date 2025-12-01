@@ -1,7 +1,0 @@
-[package]
-name = "flint-steel-chunk"
-version.workspace = true
-edition.workspace = true
-
-[dependencies]
-flint-core.workspace = true
