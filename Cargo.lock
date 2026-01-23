@@ -17,7 +17,6 @@ checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 [[package]]
 name = "flint-core"
 version = "0.1.0"
-source = "git+https://github.com/FlintTestMC/flint-core.git#65aa1240b5160ddc8866b124f79fc111f8f97190"
 dependencies = [
  "anyhow",
  "serde",
@@ -28,6 +27,7 @@ dependencies = [
 name = "flint-steel"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "dotenvy",
  "flint-core",
  "serde",
