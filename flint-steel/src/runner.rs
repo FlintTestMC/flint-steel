@@ -12,6 +12,7 @@ use crate::traits::{
 };
 
 /// Configuration for test execution
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct TestRunConfig {
     /// Enable debug mode with breakpoints
@@ -22,6 +23,7 @@ pub struct TestRunConfig {
     pub max_parallel_worlds: usize,
 }
 
+#[allow(dead_code)]
 impl Default for TestRunConfig {
     fn default() -> Self {
         Self {
@@ -35,12 +37,13 @@ impl Default for TestRunConfig {
 /// Test execution engine
 pub struct TestRunner<'a, A: FlintAdapter> {
     adapter: &'a A,
-    config: TestRunConfig,
+    // is needed for later, to run multiple tests in parallel or have more configs
+    // config: TestRunConfig,
 }
 
 impl<'a, A: FlintAdapter> TestRunner<'a, A> {
-    pub fn new(adapter: &'a A, config: TestRunConfig) -> Self {
-        Self { adapter, config }
+    pub fn new(adapter: &'a A) -> Self {
+        Self { adapter}
     }
 
     /// Run a single test
