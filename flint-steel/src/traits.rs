@@ -3,13 +3,10 @@
 //! Servers implement `FlintAdapter` to create test worlds, and `FlintWorld`/`FlintPlayer`
 //! to provide the actual block and player operations.
 
-use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
 /// Position in world coordinates [x, y, z]
 pub type BlockPos = [i32; 3];
-
-/// Which face of a block is being interacted with
 
 /// An item that can be held or placed in a slot
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -42,7 +39,7 @@ pub struct BlockData {
     /// Block identifier, e.g., "minecraft:stone"
     pub id: String,
     /// Block state properties, e.g., {"powered": "true", "facing": "north"}
-    pub properties: HashMap<String, String>,
+    pub properties: FxHashMap<String, String>,
 }
 impl Display for BlockData {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -72,11 +69,11 @@ impl BlockData {
     pub fn new(id: impl Into<String>) -> Self {
         Self {
             id: id.into(),
-            properties: HashMap::new(),
+            properties: FxHashMap::default(),
         }
     }
 
-    pub fn with_properties(id: impl Into<String>, properties: HashMap<String, String>) -> Self {
+    pub fn with_properties(id: impl Into<String>, properties: FxHashMap<String, String>) -> Self {
         Self {
             id: id.into(),
             properties,
@@ -99,6 +96,7 @@ pub struct ServerInfo {
 /// Re-exported from flint_core for convenience
 pub use flint_core::test_spec::Block;
 pub(crate) use flint_core::test_spec::{BlockFace, PlayerSlot};
+use rustc_hash::FxHashMap;
 use serde::Serialize;
 // =============================================================================
 // Core Traits

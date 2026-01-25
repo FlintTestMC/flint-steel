@@ -3,8 +3,7 @@
 //! This module provides a simple in-memory implementation of the Flint traits
 //! that can be used for unit testing and development.
 
-use std::collections::HashMap;
-
+use rustc_hash::FxHashMap;
 use crate::traits::{
     Block, BlockData, BlockFace, BlockPos, FlintAdapter, FlintPlayer, FlintWorld, Item, PlayerSlot,
     ServerInfo,
@@ -39,20 +38,20 @@ impl FlintAdapter for MockAdapter {
 
 /// Mock world that stores blocks in a HashMap
 pub struct MockWorld {
-    blocks: HashMap<BlockPos, BlockData>,
+    blocks: FxHashMap<BlockPos, BlockData>,
     tick: u64,
 }
 
 impl MockWorld {
     pub fn new() -> Self {
         Self {
-            blocks: HashMap::new(),
+            blocks: FxHashMap::default(),
             tick: 0,
         }
     }
 
     /// Get all blocks in the world (for debugging/testing)
-    pub fn all_blocks(&self) -> &HashMap<BlockPos, BlockData> {
+    pub fn all_blocks(&self) -> &FxHashMap<BlockPos, BlockData> {
         &self.blocks
     }
 }
@@ -106,14 +105,14 @@ impl FlintWorld for MockWorld {
 
 /// Mock player with inventory
 pub struct MockPlayer {
-    slots: HashMap<PlayerSlot, Item>,
+    slots: FxHashMap<PlayerSlot, Item>,
     selected_hotbar: u8,
 }
 
 impl MockPlayer {
     pub fn new() -> Self {
         Self {
-            slots: HashMap::new(),
+            slots: FxHashMap::default(),
             selected_hotbar: 1,
         }
     }
@@ -173,7 +172,7 @@ mod tests {
 
     #[test]
     fn test_adapter_default() {
-        let adapter = MockAdapter::default();
+        let adapter = MockAdapter::new();
         let info = adapter.server_info();
         assert_eq!(info.minecraft_version, "1.21");
     }
@@ -241,7 +240,7 @@ mod tests {
     #[test]
     fn test_world_set_and_get_block_with_string_properties() {
         let mut world = MockWorld::new();
-        let mut properties = HashMap::new();
+        let mut properties = FxHashMap::default();
         properties.insert("facing".to_string(), json!("north"));
         properties.insert("half".to_string(), json!("top"));
 
@@ -261,7 +260,7 @@ mod tests {
     #[test]
     fn test_world_set_and_get_block_with_bool_properties() {
         let mut world = MockWorld::new();
-        let mut properties = HashMap::new();
+        let mut properties = FxHashMap::default();
         properties.insert("powered".to_string(), json!(true));
         properties.insert("lit".to_string(), json!(false));
 
@@ -281,7 +280,7 @@ mod tests {
     #[test]
     fn test_world_set_and_get_block_with_number_properties() {
         let mut world = MockWorld::new();
-        let mut properties = HashMap::new();
+        let mut properties = FxHashMap::default();
         properties.insert("delay".to_string(), json!(2));
         properties.insert("facing".to_string(), json!("south"));
 

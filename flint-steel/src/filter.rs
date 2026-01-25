@@ -57,7 +57,8 @@ impl TestFilter {
 
     /// Add name patterns to the filter (builder pattern).
     pub fn with_patterns(mut self, patterns: impl IntoIterator<Item = impl Into<String>>) -> Self {
-        self.name_patterns.extend(patterns.into_iter().map(Into::into));
+        self.name_patterns
+            .extend(patterns.into_iter().map(Into::into));
         self
     }
 
@@ -70,17 +71,18 @@ impl TestFilter {
     /// Check if a test spec matches this filter.
     pub fn matches(&self, spec: &TestSpec) -> bool {
         // Check exact name first
-        if let Some(ref exact) = self.exact_name {
-            if spec.name != *exact {
-                return false;
-            }
+        if let Some(ref exact) = self.exact_name
+            && spec.name != *exact
+        {
+            return false;
         }
 
         // Check name patterns
         if !self.name_patterns.is_empty() {
-            let matches_any = self.name_patterns.iter().any(|pattern| {
-                glob_match(pattern, &spec.name)
-            });
+            let matches_any = self
+                .name_patterns
+                .iter()
+                .any(|pattern| glob_match(pattern, &spec.name));
             if !matches_any {
                 return false;
             }
@@ -88,9 +90,10 @@ impl TestFilter {
 
         // Check tags (test must have at least one matching tag)
         if !self.tags.is_empty() {
-            let has_matching_tag = self.tags.iter().any(|tag| {
-                spec.tags.iter().any(|t| t == tag)
-            });
+            let has_matching_tag = self
+                .tags
+                .iter()
+                .any(|tag| spec.tags.iter().any(|t| t == tag));
             if !has_matching_tag {
                 return false;
             }
@@ -195,10 +198,10 @@ impl TestSelector {
         let paths = self.loader.collect_all_test_files()?;
 
         for path in paths {
-            if let Ok(spec) = TestSpec::from_file(&path) {
-                if spec.name == name {
-                    return Ok(Some(spec));
-                }
+            if let Ok(spec) = TestSpec::from_file(&path)
+                && spec.name == name
+            {
+                return Ok(Some(spec));
             }
         }
 

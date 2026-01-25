@@ -6,7 +6,7 @@ use std::time::Instant;
 use flint_core::results::{AssertionResult, TestResult, TestSummary};
 use flint_core::test_spec::{ActionType, Block, TestSpec};
 use flint_core::timeline::TimelineAggregate;
-
+use rustc_hash::FxHashMap;
 use crate::traits::{
     BlockData, BlockPos, FlintAdapter, FlintPlayer, FlintWorld, Item, PlayerSlot,
 };
@@ -83,7 +83,7 @@ impl<'a, A: FlintAdapter> TestRunner<'a, A> {
 
             // Execute actions for this tick
             if let Some(actions) = timeline.timeline.get(&tick) {
-                for (_, (_test_idx, entry, _value_idx)) in actions.iter().enumerate() {
+                for (_test_idx, entry, _value_idx) in actions.iter() {
                     match self.execute_action(&mut *world, &mut player, &entry.action_type, tick) {
                         ActionResult::Ok => {}
                         ActionResult::AssertionPassed => {
@@ -183,7 +183,7 @@ impl<'a, A: FlintAdapter> TestRunner<'a, A> {
 
                     if !block_matches(&actual, &check.is) {
                         // Convert expected Block properties to BlockData format
-                        let expected_props: std::collections::HashMap<String, String> = check
+                        let expected_props: FxHashMap<String, String> = check
                             .is
                             .properties
                             .iter()
@@ -222,7 +222,7 @@ impl<'a, A: FlintAdapter> TestRunner<'a, A> {
                     p.select_hotbar(1);
                 }
 
-                p.use_item_on(pos, face);
+                p.use_item_on(pos, &face);
                 ActionResult::Ok
             }
 
