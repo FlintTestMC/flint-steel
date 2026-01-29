@@ -84,6 +84,24 @@ impl BlockData {
     pub fn is_air(&self) -> bool {
         self.id == "minecraft:air" || self.id == "air"
     }
+
+    /// Convert to a Block spec
+    pub fn into_block(self) -> Block {
+        Block {
+            id: self.id,
+            properties: self
+                .properties
+                .into_iter()
+                .map(|(k, v)| (k, serde_json::Value::String(v)))
+                .collect(),
+        }
+    }
+}
+
+impl From<BlockData> for Block {
+    fn from(data: BlockData) -> Self {
+        data.into_block()
+    }
 }
 
 /// Server metadata

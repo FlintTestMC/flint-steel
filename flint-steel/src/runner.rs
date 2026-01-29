@@ -2,14 +2,14 @@
 //!
 //! The `TestRunner` loads tests and executes them against a server adapter.
 
-use std::time::Instant;
-use flint_core::results::{AssertionResult, TestResult, TestSummary};
+use crate::traits::{BlockData, BlockPos, FlintAdapter, FlintPlayer, FlintWorld, Item, PlayerSlot};
+use flint_core::results::{
+    ActionOutcome, AssertFailure, AssertionResult, InfoType, TestResult, TestSummary,
+};
 use flint_core::test_spec::{ActionType, Block, TestSpec};
 use flint_core::timeline::TimelineAggregate;
 use rustc_hash::FxHashMap;
-use crate::traits::{
-    BlockData, BlockPos, FlintAdapter, FlintPlayer, FlintWorld, Item, PlayerSlot,
-};
+use std::time::Instant;
 
 /// Configuration for test execution
 #[allow(dead_code)]
@@ -43,7 +43,7 @@ pub struct TestRunner<'a, A: FlintAdapter> {
 
 impl<'a, A: FlintAdapter> TestRunner<'a, A> {
     pub fn new(adapter: &'a A) -> Self {
-        Self { adapter}
+        Self { adapter }
     }
 
     /// Run a single test
@@ -88,18 +88,12 @@ impl<'a, A: FlintAdapter> TestRunner<'a, A> {
             if let Some(actions) = timeline.timeline.get(&tick) {
                 for (_test_idx, entry, _value_idx) in actions.iter() {
                     match self.execute_action(&mut *world, &mut player, &entry.action_type, tick) {
-                        ActionResult::Ok => {}
-                        ActionResult::AssertionPassed => {
-                            result.add_assertion(AssertionResult::success(tick));
+                        ActionOutcome::Action => {}
+                        ActionOutcome::AssertPassed => {
+                            result.add_assertion(AssertionResult::Success(tick));
                         }
-                        ActionResult::AssertionFailed {
-                            pos,
-                            message,
-                        } => {
-                            let failure = AssertionResult::failure(tick, message)
-                                .with_position(pos);
-
-                            result.add_assertion(failure);
+                        ActionOutcome::AssertFailed(fail) => {
+                            result.add_assertion(AssertionResult::Failure(fail));
                             result.success = false;
                             result.total_ticks = tick;
                             result.execution_time_ms = start_time.elapsed().as_millis() as u64;
@@ -133,12 +127,12 @@ impl<'a, A: FlintAdapter> TestRunner<'a, A> {
         player: &mut Option<Box<dyn FlintPlayer>>,
         action: &ActionType,
         _tick: u32,
-    ) -> ActionResult {
+    ) -> ActionOutcome {
         match action {
             ActionType::Place { pos, block } => {
                 let pos = [pos[0], pos[1], pos[2]];
                 world.set_block(pos, block);
-                ActionResult::Ok
+                ActionOutcome::Action
             }
 
             ActionType::PlaceEach { blocks } => {
@@ -146,7 +140,7 @@ impl<'a, A: FlintAdapter> TestRunner<'a, A> {
                     let pos = [placement.pos[0], placement.pos[1], placement.pos[2]];
                     world.set_block(pos, &placement.block);
                 }
-                ActionResult::Ok
+                ActionOutcome::Action
             }
 
             ActionType::Fill { region, with } => {
@@ -166,7 +160,7 @@ impl<'a, A: FlintAdapter> TestRunner<'a, A> {
                         }
                     }
                 }
-                ActionResult::Ok
+                ActionOutcome::Action
             }
 
             ActionType::Remove { pos } => {
@@ -176,7 +170,7 @@ impl<'a, A: FlintAdapter> TestRunner<'a, A> {
                     properties: Default::default(),
                 };
                 world.set_block(pos, &air);
-                ActionResult::Ok
+                ActionOutcome::Action
             }
 
             ActionType::Assert { checks } => {
@@ -200,17 +194,25 @@ impl<'a, A: FlintAdapter> TestRunner<'a, A> {
                                 Some((k.clone(), value))
                             })
                             .collect();
-
-                        return ActionResult::AssertionFailed {
-                            pos,
-                            message: format!(
+                        return ActionOutcome::AssertFailed(AssertFailure {
+                            tick: _tick,
+                            error_message: format!(
                                 "Block mismatch at {:?}: expected '{}', got '{}'",
-                                pos, BlockData::with_properties(&check.is.id, expected_props), actual
+                                pos,
+                                BlockData::with_properties(&check.is.id, expected_props.clone()),
+                                actual,
                             ),
-                        };
+                            position: pos,
+                            execution_time_ms: None,
+                            expected: InfoType::Block(
+                                BlockData::with_properties(&check.is.id, expected_props.clone())
+                                    .into_block(),
+                            ),
+                            actual: InfoType::Block(actual.into_block()),
+                        });
                     }
                 }
-                ActionResult::AssertionPassed
+                ActionOutcome::AssertPassed
             }
 
             ActionType::UseItemOn { pos, face, item } => {
@@ -226,7 +228,7 @@ impl<'a, A: FlintAdapter> TestRunner<'a, A> {
                 }
 
                 p.use_item_on(pos, &face);
-                ActionResult::Ok
+                ActionOutcome::Action
             }
 
             ActionType::SetSlot { slot, item, count } => {
@@ -238,14 +240,14 @@ impl<'a, A: FlintAdapter> TestRunner<'a, A> {
                 } else {
                     p.set_slot(*slot, None);
                 }
-                ActionResult::Ok
+                ActionOutcome::Action
             }
 
             ActionType::SelectHotbar { slot } => {
                 // Create player on demand if not already created
                 let p = player.get_or_insert_with(|| world.create_player());
                 p.select_hotbar(*slot);
-                ActionResult::Ok
+                ActionOutcome::Action
             }
         }
     }
@@ -255,10 +257,7 @@ impl<'a, A: FlintAdapter> TestRunner<'a, A> {
 enum ActionResult {
     Ok,
     AssertionPassed,
-    AssertionFailed {
-        pos: BlockPos,
-        message: String,
-    },
+    AssertionFailed { pos: BlockPos, message: String },
 }
 
 /// Check if actual block matches expected
