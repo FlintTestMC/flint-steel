@@ -19,9 +19,20 @@ pub struct Item {
 
 impl Item {
     pub fn new(id: impl Into<String>) -> Self {
+        let id = id.into();
+        if id.starts_with("empty") {
+            return Item::empty()
+        }
         Self {
-            id: id.into(),
+            id,
             count: 1,
+        }
+    }
+    
+    pub fn empty() -> Self {
+        Self {
+            id: "minecraft:air".to_string(),
+            count: 0,
         }
     }
 

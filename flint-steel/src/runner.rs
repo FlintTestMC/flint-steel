@@ -2,7 +2,7 @@
 //!
 //! The `TestRunner` loads tests and executes them against a server adapter.
 
-use crate::traits::{BlockData, BlockPos, FlintAdapter, FlintPlayer, FlintWorld, Item, PlayerSlot};
+use crate::traits::{BlockData, FlintAdapter, FlintPlayer, FlintWorld, Item, PlayerSlot};
 use flint_core::results::{
     ActionOutcome, AssertFailure, AssertionResult, InfoType, TestResult, TestSummary,
 };
@@ -251,13 +251,6 @@ impl<'a, A: FlintAdapter> TestRunner<'a, A> {
             }
         }
     }
-}
-
-/// Result of executing an action
-enum ActionResult {
-    Ok,
-    AssertionPassed,
-    AssertionFailed { pos: BlockPos, message: String },
 }
 
 /// Check if actual block matches expected
