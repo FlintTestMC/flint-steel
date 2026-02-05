@@ -12,6 +12,10 @@ flint-steel wraps real `steel-core` internals in lightweight test harnesses:
 
 Tests are written as JSON specs (see [SteelBenchmark](https://github.com/FlintTestMC/SteelBenchmark)) and executed against the real game engine, including block neighbors, shapes, callbacks, and tick processing.
 
+## Discord
+
+Join the [Flint Discord](https://discord.gg/kJXKfgx66X) to discuss this project or ask questions.
+
 ## Prerequisites
 
 - Rust (edition 2024)
