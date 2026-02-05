@@ -18,8 +18,7 @@ uuid = { workspace = true }
 text_components = { workspace = true }
 
 # Flint testing framework
-flint-core = { path = "../../../flint/flint-core" }
-# flint-core = { git = "https://github.com/FlintTestMC/flint-core.git" }
+flint-core = { git = "https://github.com/FlintTestMC/flint-core.git" }
 
 # Async
 tokio = { workspace = true }
