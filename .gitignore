@@ -2,5 +2,5 @@
 .idea
 test/
 index.json
-.env
+.env.example
 .cache

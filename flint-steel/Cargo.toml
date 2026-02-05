@@ -1,12 +1,39 @@
 [package]
-name = "flint-steel"
+name = "steel-flint"
 version.workspace = true
 edition.workspace = true
+description = "Flint testing framework integration for SteelMC"
 
 [dependencies]
-serde.workspace = true
-serde_json.workspace = true
-flint-steel-chunk = { path = "../flint-steel-chunk" }
-flint-core.workspace = true
-dotenvy.workspace = true
-# rsjsonnet = "0.4.0" # for jsonnet support
+# Internal crates
+steel-core = { workspace = true }
+steel-protocol = { workspace = true }
+steel-registry = { workspace = true }
+steel-utils = { workspace = true }
+
+# UUID
+uuid = { workspace = true }
+
+# Text components for disconnect messages
+text_components = { workspace = true }
+
+# Flint testing framework
+flint-core = { path = "../../../flint/flint-core" }
+# flint-core = { git = "https://github.com/FlintTestMC/flint-core.git" }
+
+# Async
+tokio = { workspace = true }
+futures = { workspace = true }
+
+# Logging
+tracing.workspace = true
+
+# Hash maps
+rustc-hash = { workspace = true }
+
+# Serialization (for flint-core compatibility)
+serde_json = { workspace = true }
+dotenvy = "0.15.7"
+
+[lints]
+workspace = true

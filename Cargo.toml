@@ -1,8 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-    "flint-steel", "flint-steel-chunk",
+    "flint-steel",
 ]
+description = "Flint testing framework integration for SteelMC"
+
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
