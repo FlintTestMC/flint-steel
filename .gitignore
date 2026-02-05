@@ -2,7 +2,6 @@
 .idea
 test/
 index.json
-.env.example
 .cache
 .claude
 CLAUDE.md
