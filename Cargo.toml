@@ -1,5 +1,5 @@
 [package]
-name = "steel-flint"
+name = "flint-steel"
 version = "1.0.0"
 edition = "2024"
 description = "Flint testing framework integration for SteelMC"
