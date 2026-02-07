@@ -13,7 +13,7 @@ use steel_core::behavior::BlockHitResult;
 use steel_core::inventory::container::Container;
 use steel_core::player::game_mode;
 use steel_core::player::player_inventory::PlayerInventory;
-use steel_core::player::{ClientInformation, GameProfile, Player};
+use steel_core::player::{ClientInformation, GameProfile, Player, PlayerConnection};
 use steel_core::server::Server;
 use steel_core::world::World;
 use steel_registry::REGISTRY;
@@ -35,14 +35,15 @@ pub struct SteelTestPlayer {
     player: Arc<Player>,
     /// The test connection (kept for event inspection).
     #[allow(dead_code)]
-    connection: Arc<FlintConnection>,
+    connection: FlintConnection,
 }
 
 impl SteelTestPlayer {
     /// Creates a new test player in the given world.
     pub fn new(world: Arc<World>) -> Self {
         // Create a test connection
-        let connection = Arc::new(FlintConnection::new());
+        let connection = FlintConnection::new();
+        let test_conn = connection.clone(); // shares inner state via Arc
 
         // Create a dummy game profile
         let gameprofile = GameProfile {
@@ -53,10 +54,11 @@ impl SteelTestPlayer {
         };
 
         // Create the player with our test connection
+        let player_connection = Arc::new(PlayerConnection::Other(Box::new(connection)));
         let player = Arc::new_cyclic(|player_weak| {
             let p = Player::new(
                 gameprofile,
-                connection.clone(),
+                player_connection,
                 world,
                 sync::Weak::<Server>::new(),
                 -1, // Negative entity ID for test players
@@ -68,7 +70,7 @@ impl SteelTestPlayer {
             p
         });
 
-        Self { player, connection }
+        Self { player, connection: test_conn }
     }
 
     /// Gets the connection's recorded events (for test assertions).

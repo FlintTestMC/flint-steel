@@ -3,6 +3,7 @@
 //! This module provides a mock connection that records events (packets sent, disconnects)
 //! instead of sending them over the network.
 
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use steel_core::player::connection::NetworkConnection;
@@ -29,20 +30,24 @@ pub enum PlayerEvent {
 ///
 /// This connection records events instead of sending packets over the network,
 /// allowing tests to verify what packets would have been sent.
+///
+/// Internally shares state via `Arc`, so cloning gives a handle to the same
+/// event log and closed flag.
+#[derive(Clone)]
 pub struct FlintConnection {
     /// Recorded events for test assertions.
-    events: SyncMutex<Vec<PlayerEvent>>,
+    events: Arc<SyncMutex<Vec<PlayerEvent>>>,
     /// Whether the connection is closed.
-    closed: AtomicBool,
+    closed: Arc<AtomicBool>,
 }
 
 impl FlintConnection {
     /// Creates a new test connection.
     #[must_use]
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            events: SyncMutex::new(Vec::new()),
-            closed: AtomicBool::new(false),
+            events: Arc::new(SyncMutex::new(Vec::new())),
+            closed: Arc::new(AtomicBool::new(false)),
         }
     }
 
