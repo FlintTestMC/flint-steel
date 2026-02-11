@@ -210,7 +210,7 @@ impl FlintPlayer for SteelTestPlayer {
         // Call the real game_mode::use_item_on
         let result = game_mode::use_item_on(
             &self.player,
-            &self.player.world(),
+            &self.player.world,
             InteractionHand::MainHand,
             &hit_result,
         );

@@ -175,7 +175,7 @@ mod tests {
 
         let test_dir = PathBuf::from(get_test_path());
         assert!(
-            !test_dir.exists(),
+            test_dir.exists(),
             "FlintBenchmark tests directory not found, skipping"
         );
 
