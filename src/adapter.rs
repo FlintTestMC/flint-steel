@@ -174,21 +174,21 @@ mod tests {
         init_env();
 
         let test_dir = PathBuf::from(get_test_path());
-        if !test_dir.exists() {
-            println!("FlintBenchmark tests directory not found, skipping");
-            return;
-        }
+        assert!(
+            !test_dir.exists(),
+            "FlintBenchmark tests directory not found, skipping"
+        );
 
         let loader = TestLoader::new(&test_dir, true)
             .unwrap_or_else(|e| panic!("error while loading test files: {e}"));
         let paths = loader
             .collect_all_test_files()
             .unwrap_or_else(|e| panic!("error while loading test files: {e}"));
-
-        if paths.is_empty() {
-            println!("No test files matched the filter criteria");
-            return;
-        }
+        assert!(
+            !paths.is_empty(),
+            "No test files matched the filter criteria in {}",
+            test_dir.to_str().unwrap_or("NONE")
+        );
 
         println!("Found {} test(s) to run", paths.len());
 
