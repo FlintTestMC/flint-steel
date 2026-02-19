@@ -12,14 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone SteelMC
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: JunkyDeveloper/SteelMC
           ref: dimensions
           path: steel/SteelMC
 
       - name: Checkout flint-steel
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: steel/SteelMC/flint-steel
 
@@ -27,7 +27,7 @@ jobs:
         run: sed -i 's/"steel-crypto",/"steel-crypto",\n    "flint-steel",/' steel/SteelMC/Cargo.toml
 
       - name: Clone JunkysGenerator
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: FlintTestMC/JunkysGenerator
           path: flint/JunkysGenerator
