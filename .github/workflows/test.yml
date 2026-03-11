@@ -76,7 +76,7 @@ jobs:
 
       - name: Run flint-steel tests
         timeout-minutes: 15
-        working-directory: steel/flint-steel
+        working-directory: flint-steel
         env:
           TEST_PATH: ${{ github.workspace }}/flint/JunkysGenerator
         run: cargo test --profile cicd --lib -p flint-steel test_run_all_flint_benchmarks -- --nocapture
