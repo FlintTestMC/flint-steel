@@ -7,7 +7,7 @@
 use std::sync;
 use std::sync::Arc;
 
-use flint_core::test_spec::{BlockFace, PlayerSlot};
+use flint_core::test_spec::{BlockFace, GameMode, PlayerSlot};
 use flint_core::{BlockPos, FlintPlayer, Item};
 use rustc_hash::FxHashMap;
 use steel_core::behavior::BlockHitResult;
@@ -22,7 +22,7 @@ use steel_registry::data_components::ComponentData;
 use steel_registry::item_stack::ItemStack;
 use steel_utils::Identifier;
 use steel_utils::math::Vector3;
-use steel_utils::types::InteractionHand;
+use steel_utils::types::{GameType, InteractionHand};
 use uuid::Uuid;
 
 use crate::convert::{flint_face_to_direction, flint_pos_to_steel};
@@ -123,6 +123,7 @@ const fn player_slot_to_index(slot: PlayerSlot) -> usize {
         PlayerSlot::Leggings => 37,
         PlayerSlot::Chestplate => 38,
         PlayerSlot::Helmet => 39,
+        PlayerSlot::None => todo!(),
     }
 }
 
@@ -174,19 +175,6 @@ fn stack_to_flint_item(stack: &ItemStack, requested_data: Vec<String>) -> Option
                     map.insert(key.clone(), b.to_string());
                 }
                 ComponentData::Float(b) => {
-                    map.insert(key.clone(), b.to_string());
-                }
-                ComponentData::Tool(b) => {
-                    map.insert(key.clone(), b.to_string());
-                }
-                ComponentData::Equippable(b) => {
-                    map.insert(key.clone(), b.to_string());
-                }
-                ComponentData::TextComponent(b) => {
-                    map.insert(key.clone(), b.to_string());
-                }
-                ComponentData::Todo => {}
-                ComponentData::Other(b) => {
                     map.insert(key.clone(), b.to_string());
                 }
                 _ => {}
@@ -257,6 +245,15 @@ impl FlintPlayer for SteelTestPlayer {
 
         tracing::debug!("use_item_on({pos:?}, {face:?}) -> {result:?}");
     }
+
+    fn set_game_mode(&mut self, mode: GameMode) {
+        self.player.game_mode.store(match mode {
+            GameMode::Survival => GameType::Survival,
+            GameMode::Creative => GameType::Creative,
+            GameMode::Adventure => GameType::Adventure,
+            GameMode::Spectator => GameType::Spectator,
+        });
+    }
 }
 
 #[cfg(test)]
@@ -276,7 +273,7 @@ mod tests {
         player.set_slot(PlayerSlot::Hotbar1, Some(&item));
 
         let retrieved = player
-            .get_slot(PlayerSlot::Hotbar1)
+            .get_slot(PlayerSlot::Hotbar1, vec![])
             .expect("Slot not found");
         assert_eq!(retrieved.id, "minecraft:stone");
     }
