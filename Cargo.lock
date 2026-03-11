@@ -544,7 +544,6 @@ dependencies = [
 [[package]]
 name = "flint-core"
 version = "0.1.0"
-source = "git+https://github.com/FlintTestMC/flint-core.git#7a162291f263d50fd941dce3800d735a0312853b"
 dependencies = [
  "anyhow",
  "colored",
