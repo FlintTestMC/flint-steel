@@ -547,7 +547,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "colored",
- "log",
  "rustc-hash",
  "serde",
  "serde_json",
