@@ -8,12 +8,15 @@ description = "Flint testing framework integration for SteelMC"
 inherits = "dev"
 debug = true
 
+[profile.cicd]
+inherits = "release"
+
 [dependencies]
 # Internal crates
-steel-core = { git = "ssh://git@github.com/Steel-Foundation/SteelMC.git" }
-steel-protocol = { git = "ssh://git@github.com/Steel-Foundation/SteelMC.git" }
-steel-registry = { git = "ssh://git@github.com/Steel-Foundation/SteelMC.git" }
-steel-utils = { git = "ssh://git@github.com/Steel-Foundation/SteelMC.git" }
+steel-core = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
+steel-protocol = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
+steel-registry = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
+steel-utils = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
 
 # UUID
 uuid = { version = "1.20", features = ["serde", "v4"] }
@@ -27,7 +30,6 @@ text_components = { git = "https://github.com/Steel-Foundation/TextComponents.gi
 
 # Flint testing framework
 flint-core = { git = "https://github.com/FlintTestMC/flint-core.git" }
-#flint-core ={ path = "../../flint/flint-core"}
 
 # Async
 tokio = { version = "1.49", features = [
@@ -47,6 +49,7 @@ futures = "0.3.31"
 tracing = "0.1"
 # Because of steel
 cipher = "=0.5.0-rc.8"
+cfb8 = "0.8.1"
 
 # Hash maps
 rustc-hash = "2.1.1"
@@ -75,9 +78,3 @@ all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -2 }
 unwrap_used = { level = "warn", priority = -3 }
 
-# Uncomment for local development with a local SteelMC checkout:
-[patch."ssh://git@github.com/Steel-Foundation/SteelMC.git"]
-steel-core = { path = "../SteelMC/steel-core" }
-steel-protocol = { path = "../SteelMC/steel-protocol" }
-steel-registry = { path = "../SteelMC/steel-registry" }
-steel-utils = { path = "../SteelMC/steel-utils" }
