@@ -14,7 +14,7 @@ version = "0.9.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04097e08a47d9ad181c2e1f4a5fabc9ae06ce8839a333ba9a949bcb0d31fd2a3"
 dependencies = [
- "cipher 0.5.0-rc.8",
+ "cipher",
  "cpubits",
  "cpufeatures 0.2.17",
 ]
@@ -94,9 +94,9 @@ dependencies = [
 
 [[package]]
 name = "block-buffer"
-version = "0.12.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cdd35008169921d80bc60d3d0ab416eecb028c4cd653352907921d95084790be"
+checksum = "96eb4cdd6cf1b31d671e9efe75c5d1ec614776856cefbe109ca373554a6d514f"
 dependencies = [
  "hybrid-array",
 ]
@@ -139,20 +139,11 @@ checksum = "6d43a04d8753f35258c91f8ec639f792891f748a1edbd759cf1dcea3382ad83c"
 
 [[package]]
 name = "cfb8"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "014c0a0e1ad0dae6a86c082db2f9bd7fe8c2c734227047d0d8b4d4a3a094a1e1"
-dependencies = [
- "cipher 0.4.4",
-]
-
-[[package]]
-name = "cfb8"
 version = "0.9.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9f54597bf5c1bf0162a5fe96e0e51a3adddf97f9b6c873f89b8ae359c25a4a5"
 dependencies = [
- "cipher 0.5.0-rc.8",
+ "cipher",
 ]
 
 [[package]]
@@ -180,22 +171,12 @@ dependencies = [
 
 [[package]]
 name = "cipher"
-version = "0.4.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "773f3b9af64447d2ce9850330c473515014aa235e6a783b02db81ff39e4a3dad"
-dependencies = [
- "crypto-common 0.1.7",
- "inout 0.1.4",
-]
-
-[[package]]
-name = "cipher"
 version = "0.5.0-rc.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9002c8edb9b1e21938663da3489c9c4403bba2393997fb2ecbd401386c0e71dc"
 dependencies = [
- "crypto-common 0.2.1",
- "inout 0.2.2",
+ "crypto-common 0.2.0",
+ "inout",
 ]
 
 [[package]]
@@ -378,9 +359,9 @@ dependencies = [
 
 [[package]]
 name = "crypto-common"
-version = "0.2.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77727bb15fa921304124b128af125e7e3b968275d1b108b379190264f4423710"
+checksum = "211f05e03c7d03754740fd9e585de910a095d6b99f8bcfffdef8319fa02a8331"
 dependencies = [
  "hybrid-array",
 ]
@@ -472,13 +453,13 @@ dependencies = [
 
 [[package]]
 name = "digest"
-version = "0.11.1"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "285743a676ccb6b3e116bc14cc69319b957867930ae9c4822f8e0f54509d7243"
+checksum = "f8bf3682cdec91817be507e4aa104314898b95b84d74f3d43882210101a545b6"
 dependencies = [
- "block-buffer 0.12.0",
+ "block-buffer 0.11.0",
  "const-oid",
- "crypto-common 0.2.1",
+ "crypto-common 0.2.0",
 ]
 
 [[package]]
@@ -575,8 +556,8 @@ dependencies = [
 name = "flint-steel"
 version = "1.0.0"
 dependencies = [
- "cfb8 0.8.1",
- "cipher 0.5.0-rc.8",
+ "cipher",
+ "crypto-common 0.2.0",
  "dotenvy",
  "flint-core",
  "futures",
@@ -1013,15 +994,6 @@ dependencies = [
  "hashbrown 0.16.1",
  "serde",
  "serde_core",
-]
-
-[[package]]
-name = "inout"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "879f10e63c20629ecabbb64a8010319738c66a5cd0c29b02d63d272b03751d01"
-dependencies = [
- "generic-array",
 ]
 
 [[package]]
@@ -1626,7 +1598,7 @@ dependencies = [
  "const-oid",
  "crypto-bigint",
  "crypto-primes",
- "digest 0.11.1",
+ "digest 0.11.0",
  "pkcs1",
  "pkcs8",
  "rand_core 0.10.0",
@@ -1888,7 +1860,7 @@ checksum = "7c5f3b1e2dc8aad28310d8410bd4d7e180eca65fca176c52ab00d364475d0024"
 dependencies = [
  "cfg-if",
  "cpufeatures 0.2.17",
- "digest 0.11.1",
+ "digest 0.11.0",
 ]
 
 [[package]]
@@ -1913,7 +1885,7 @@ version = "3.0.0-rc.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f1880df446116126965eeec169136b2e0251dba37c6223bcc819569550edea3"
 dependencies = [
- "digest 0.11.1",
+ "digest 0.11.0",
  "rand_core 0.10.0",
 ]
 
@@ -2100,7 +2072,7 @@ name = "steel-protocol"
 version = "0.1.0"
 dependencies = [
  "aes",
- "cfb8 0.9.0-rc.3",
+ "cfb8",
  "flate2",
  "log",
  "replace_with",
