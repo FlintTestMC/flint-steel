@@ -130,7 +130,8 @@ mod tests {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).expect("TODO: panic message");
         }
-        fs::write(&path, summary.create_ci_output()).expect("failed to write flint_summary.json");
+        fs::write(&path, summary.create_ci_output(true))
+            .expect("failed to write flint_summary.json");
         println!("Summary saved to {}", path.display());
     }
 
