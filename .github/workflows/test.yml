@@ -63,7 +63,7 @@ jobs:
         run: rm -rf flint/JunkysGenerator/target
 
       - name: Configure SteelMC patch
-        working-directory: steel/flint-steel
+        working-directory: flint-steel
         run: |
           mkdir -p .cargo
           cat > .cargo/config.toml << 'EOF'
