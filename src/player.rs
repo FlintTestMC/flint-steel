@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use flint_core::test_spec::{BlockFace, PlayerSlot};
 use flint_core::{BlockPos, FlintPlayer, Item};
+use rustc_hash::FxHashMap;
 use steel_core::behavior::BlockHitResult;
 use steel_core::inventory::container::Container;
 use steel_core::player::game_mode;
@@ -17,7 +18,9 @@ use steel_core::player::{ClientInformation, GameProfile, Player, PlayerConnectio
 use steel_core::server::Server;
 use steel_core::world::World;
 use steel_registry::REGISTRY;
+use steel_registry::data_components::ComponentData;
 use steel_registry::item_stack::ItemStack;
+use steel_utils::Identifier;
 use steel_utils::math::Vector3;
 use steel_utils::types::InteractionHand;
 use uuid::Uuid;
@@ -136,7 +139,7 @@ fn flint_item_to_stack(item: &Item) -> ItemStack {
         &item.id
     };
 
-    let identifier = steel_utils::Identifier::vanilla(item_id.to_string());
+    let identifier = Identifier::vanilla(item_id.to_string());
 
     // Look up the item in the registry
     if let Some(item_ref) = REGISTRY.items.by_key(&identifier) {
@@ -151,15 +154,49 @@ fn flint_item_to_stack(item: &Item) -> ItemStack {
 ///
 /// Returns `None` for empty stacks. Adds the `minecraft:` namespace prefix
 /// to the item ID for consistency with Flint's expected format.
-fn stack_to_flint_item(stack: &ItemStack) -> Option<Item> {
+fn stack_to_flint_item(stack: &ItemStack, requested_data: Vec<String>) -> Option<Item> {
     if stack.is_empty() {
         return None;
     }
 
     let id = format!("minecraft:{}", stack.item.key.path);
+    let mut map: FxHashMap<String, String> = FxHashMap::default();
+    for key in requested_data {
+        if let Some(data) = stack.get_effective_value_raw(&Identifier::vanilla(key.clone())) {
+            match data {
+                ComponentData::Empty => {
+                    map.insert(key.clone(), "".to_string());
+                }
+                ComponentData::Bool(b) => {
+                    map.insert(key.clone(), b.to_string());
+                }
+                ComponentData::I32(b) => {
+                    map.insert(key.clone(), b.to_string());
+                }
+                ComponentData::Float(b) => {
+                    map.insert(key.clone(), b.to_string());
+                }
+                ComponentData::Tool(b) => {
+                    map.insert(key.clone(), b.to_string());
+                }
+                ComponentData::Equippable(b) => {
+                    map.insert(key.clone(), b.to_string());
+                }
+                ComponentData::TextComponent(b) => {
+                    map.insert(key.clone(), b.to_string());
+                }
+                ComponentData::Todo => {}
+                ComponentData::Other(b) => {
+                    map.insert(key.clone(), b.to_string());
+                }
+                _ => {}
+            }
+        }
+    }
     Some(Item {
         id,
         count: stack.count.try_into().unwrap_or(1),
+        data: map,
     })
 }
 
@@ -172,12 +209,12 @@ impl FlintPlayer for SteelTestPlayer {
         inv.set_item(index, stack);
     }
 
-    fn get_slot(&self, slot: PlayerSlot) -> Option<Item> {
+    fn get_slot(&self, slot: PlayerSlot, requested_data: Vec<String>) -> Option<Item> {
         let index = player_slot_to_index(slot);
 
         let inv = self.player.inventory.lock();
         let stack = inv.get_item(index);
-        stack_to_flint_item(stack)
+        stack_to_flint_item(stack, requested_data)
     }
 
     fn select_hotbar(&mut self, slot: u8) {
