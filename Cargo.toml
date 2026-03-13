@@ -49,7 +49,7 @@ futures = "0.3.31"
 tracing = "0.1"
 # Because of steel
 cipher = "=0.5.1"
-crypto-common = "0.2.0"
+crypto-common = "0.2.1"
 
 # Hash maps
 rustc-hash = "2.1.1"
