@@ -16,12 +16,12 @@ jobs:
         with:
           repository: JunkyDeveloper/SteelMC
           ref: dimensions_new
-          path: steel/SteelMC
+          path: SteelMC
 
       - name: Checkout flint-steel
         uses: actions/checkout@v6
         with:
-          path: steel/flint-steel
+          path: flint-steel
 
       - name: Clone JunkysGenerator
         uses: actions/checkout@v6
@@ -62,12 +62,24 @@ jobs:
       - name: Clean up generator build artifacts
         run: rm -rf flint/JunkysGenerator/target
 
+      - name: Configure SteelMC patch
+        working-directory: flint-steel
+        run: |
+          mkdir -p .cargo
+          cat > .cargo/config.toml << 'EOF'
+          [patch."https://github.com/Steel-Foundation/SteelMC.git"]
+          steel-core     = { path = "../SteelMC/steel-core" }
+          steel-protocol = { path = "../SteelMC/steel-protocol" }
+          steel-registry = { path = "../SteelMC/steel-registry" }
+          steel-utils    = { path = "../SteelMC/steel-utils" }
+          EOF
+
       - name: Run flint-steel tests
         timeout-minutes: 15
-        working-directory: steel/flint-steel
+        working-directory: flint-steel
         env:
           TEST_PATH: ${{ github.workspace }}/flint/JunkysGenerator
-        run: cargo test --release --lib -p flint-steel test_run_all_flint_benchmarks -- --nocapture
+        run: cargo test --profile cicd --lib -p flint-steel test_run_all_flint_benchmarks -- --nocapture
 
       - name: Upload Flint summary
         if: always()

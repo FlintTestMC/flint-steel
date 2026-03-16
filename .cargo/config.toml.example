@@ -1,0 +1,11 @@
+# Copy this file to .cargo/config.toml and adjust paths for local development.
+# config.toml is gitignored — this patch applies to all profiles (release, flint, cicd, etc.)
+
+[patch."ssh://git@github.com/Steel-Foundation/SteelMC.git"]
+steel-core     = { path = "../SteelMC/steel-core" }
+steel-protocol = { path = "../SteelMC/steel-protocol" }
+steel-registry = { path = "../SteelMC/steel-registry" }
+steel-utils    = { path = "../SteelMC/steel-utils" }
+
+[patch."https://github.com/FlintTestMC/flint-core.git"]
+flint-core = { path = "../flint-core" }

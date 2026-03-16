@@ -3,8 +3,8 @@
 use flint_core::Block;
 use flint_core::test_spec::BlockFace;
 use rustc_hash::FxHashMap;
-use steel_registry::REGISTRY;
 use steel_registry::blocks::properties::Direction;
+use steel_registry::{REGISTRY, RegistryExt};
 use steel_utils::{BlockPos as SteelBlockPos, BlockStateId, Identifier};
 
 /// Convert a Flint block specification to a `SteelMC` `BlockStateId`.
@@ -44,7 +44,11 @@ pub fn state_id_to_block(state_id: BlockStateId) -> Block {
         return Block::new("minecraft:air");
     };
 
-    let id = format!("minecraft:{}", block.key.path);
+    let mut id = format!("minecraft:{}", block.key.path);
+
+    if block.key.path == "void_air" || block.key.path == "cave_air" {
+        id = format!("minecraft:{}", "air");
+    }
 
     // Get properties from the registry
     let props = REGISTRY.blocks.get_properties(state_id);

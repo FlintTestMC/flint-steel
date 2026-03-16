@@ -186,7 +186,7 @@ impl FlintWorld for SteelTestWorld {
         // Ensure the chunk is loaded (for RAM storage this creates empty chunks)
         self.ensure_chunk_at(&steel_pos);
 
-        let state = self.world.get_block_state(&steel_pos);
+        let state = self.world.get_block_state(steel_pos);
         state_id_to_block(state)
     }
 
