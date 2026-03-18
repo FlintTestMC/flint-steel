@@ -1,0 +1,7 @@
+[filter]
+implemented_only = true
+
+# [filter.tags]
+# redstone = true
+# walls = false
+# fence = true

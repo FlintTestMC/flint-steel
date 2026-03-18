@@ -13,7 +13,7 @@ inherits = "release"
 
 [dependencies]
 # Internal crates
-steel-core = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
+steel-core = { git = "https://github.com/Steel-Foundation/SteelMC.git" , features = ["flint"]}
 steel-protocol = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
 steel-registry = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
 steel-utils = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
@@ -57,6 +57,10 @@ rustc-hash = "2.1.1"
 # Serialization (for flint-core compatibility)
 dotenvy = "0.15.7"
 
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+
 [lints.rust]
 missing_docs = "warn"
 
@@ -77,4 +81,3 @@ missing_const_for_fn = "warn"
 all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -2 }
 unwrap_used = { level = "warn", priority = -3 }
-
