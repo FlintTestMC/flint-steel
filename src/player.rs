@@ -166,17 +166,18 @@ fn stack_to_flint_item(stack: &ItemStack, requested_data: Vec<String>) -> Option
         if let Some(data) = stack.get_effective_value_raw(&Identifier::vanilla(key.clone())) {
             match data {
                 ComponentData::Empty => {
-                    map.insert(key.clone(), "".to_string());
+                    map.insert(key, "".to_string());
                 }
                 ComponentData::Bool(b) => {
-                    map.insert(key.clone(), b.to_string());
+                    map.insert(key, b.to_string());
                 }
                 ComponentData::I32(b) => {
-                    map.insert(key.clone(), b.to_string());
+                    map.insert(key, b.to_string());
                 }
                 ComponentData::Float(b) => {
-                    map.insert(key.clone(), b.to_string());
+                    map.insert(key, b.to_string());
                 }
+                // TODO: handle other data types then needed
                 _ => {}
             }
         }
