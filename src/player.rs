@@ -22,7 +22,6 @@ use steel_registry::data_components::ComponentData;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::{REGISTRY, RegistryExt};
 use steel_utils::Identifier;
-use steel_utils::math::Vector3;
 use steel_utils::types::{GameType, InteractionHand};
 use uuid::Uuid;
 
