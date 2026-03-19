@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use flint_core::test_spec::{BlockFace, GameMode, PlayerSlot};
 use flint_core::{BlockPos, FlintPlayer, Item};
+use glam::DVec3;
 use rustc_hash::FxHashMap;
 use steel_core::behavior::BlockHitResult;
 use steel_core::inventory::container::Container;
@@ -224,7 +225,7 @@ impl FlintPlayer for SteelTestPlayer {
 
         // Create a block hit result
         let hit_result = BlockHitResult {
-            location: Vector3::new(
+            location: DVec3::new(
                 f64::from(steel_pos.x()) + 0.5,
                 f64::from(steel_pos.y()) + 0.5,
                 f64::from(steel_pos.z()) + 0.5,
