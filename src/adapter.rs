@@ -227,7 +227,7 @@ mod tests {
         let loader = TestLoader::new(&test_path, true)
             .unwrap_or_else(|e| panic!("error while loading test files: {e}"));
         let paths = collect_filtered_paths(&loader, &cfg);
-        let specs = loader.load_specs(&paths).unwrap();
+        let specs = loader.load_specs(&paths, false).unwrap();
 
         // Create adapter and runner
         let adapter = SteelAdapter::new();
@@ -264,7 +264,7 @@ mod tests {
 
         println!("Found {} test(s) to run", paths.len());
 
-        let specs = loader.load_specs(&paths).unwrap();
+        let specs = loader.load_specs(&paths, false).unwrap();
 
         let adapter = SteelAdapter::new();
         let runner = TestRunner::new(Arc::new(adapter));
