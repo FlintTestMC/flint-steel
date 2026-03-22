@@ -547,7 +547,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "colored",
- "log",
+ "rayon",
  "rustc-hash",
  "semver",
  "serde",

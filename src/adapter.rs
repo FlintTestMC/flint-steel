@@ -72,6 +72,7 @@ mod tests {
     struct FilterConfig {
         tags: Option<rustc_hash::FxHashMap<String, bool>>,
         implemented_only: Option<bool>,
+        ignore_tags: Option<Vec<bool>>,
         test: Option<String>,
         pattern: Option<String>,
     }
@@ -135,7 +136,7 @@ mod tests {
             });
         if let Some(tags) = tags {
             println!("Running tests with tags: {}", tags.join(", "));
-            return loader.collect_by_tags(&tags).unwrap_or_default();
+            return loader.collect_by_tags(&tags);
         }
 
         // Pattern matching: env > toml
