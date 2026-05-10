@@ -66,6 +66,9 @@ mod tests {
     #[derive(serde::Deserialize, Default)]
     struct FlintConfig {
         filter: Option<FilterConfig>,
+        /// Base URL of the flint-viz instance to embed in failure URLs.
+        /// Falls back to `FLINT_VIZ_URL` env var, then `http://localhost:7878`.
+        viz_url: Option<String>,
     }
 
     #[derive(serde::Deserialize, Default)]
@@ -184,6 +187,73 @@ mod tests {
         println!("Summary saved to {}", path.display());
     }
 
+    fn resolve_viz_base_url(cfg: &FlintConfig) -> String {
+        var("FLINT_VIZ_URL")
+            .ok()
+            .or_else(|| cfg.viz_url.clone())
+            .unwrap_or_else(|| "http://localhost:7878".to_string())
+    }
+
+    /// For each failing test in `summary`, print a clickable flint-viz URL with
+    /// the failing assertion(s) + inline `TestSpec` baked in. Designed to land
+    /// directly below the failure tree so terminal emulators (and PR-comment
+    /// renderers) auto-link it.
+    fn print_failure_urls(
+        specs: &[flint_core::TestSpecLoadResult],
+        paths: &[PathBuf],
+        summary: &TestSummary,
+        cfg: &FlintConfig,
+    ) {
+        use flint_core::results::AssertionResult;
+        use flint_core::viz_link::{FailurePayload, failure_url};
+
+        let base = resolve_viz_base_url(cfg);
+        let mut emitted = false;
+        // specs/paths/results run in lockstep — `run_tests` preserves order.
+        for ((load_result, path), result) in
+            specs.iter().zip(paths.iter()).zip(summary.results.iter())
+        {
+            if result.success || result.skipped {
+                continue;
+            }
+            let flint_core::TestSpecLoadResult::Loaded(spec) = load_result else {
+                continue;
+            };
+            let failures: Vec<_> = result
+                .assertions
+                .iter()
+                .filter_map(|a| match a {
+                    AssertionResult::Failure(f) => Some(f.clone()),
+                    AssertionResult::Success(_) => None,
+                })
+                .collect();
+            if failures.is_empty() {
+                continue;
+            }
+            let payload = FailurePayload::new(
+                spec.clone(),
+                Some(path.clone()),
+                failures,
+                result.total_ticks,
+            );
+            match failure_url(&payload, &base) {
+                Ok(url) => {
+                    if !emitted {
+                        println!();
+                        emitted = true;
+                    }
+                    println!("Open in flint-viz: {url}");
+                }
+                Err(err) => {
+                    eprintln!(
+                        "warning: could not encode flint-viz URL for `{}`: {err}",
+                        result.test_name
+                    );
+                }
+            }
+        }
+    }
+
     fn get_implemented_blocks() -> Vec<String> {
         let mut registered_block_ids: Vec<String> = Vec::new();
         for (id, behavior) in BLOCK_BEHAVIORS.get_behaviors().iter().enumerate() {
@@ -226,6 +296,7 @@ mod tests {
         let summary = runner.run_tests(&specs);
         summary.print_concise_summary();
         save_summary(&summary);
+        print_failure_urls(&specs, &paths, &summary, &cfg);
         assert_eq!(summary.failed_tests, 0, "Not all flint tests passed!");
     }
 
@@ -260,6 +331,7 @@ mod tests {
         let summary = runner.run_tests(&specs);
         summary.print_concise_summary();
         save_summary(&summary);
+        print_failure_urls(&specs, &paths, &summary, &load_config());
         assert_eq!(summary.failed_tests, 0, "No tests were run");
     }
 }
