@@ -30,7 +30,7 @@ text_components = { git = "https://github.com/Steel-Foundation/TextComponents.gi
 ] }
 
 # Flint testing framework
-flint-core = { git = "https://github.com/FlintTestMC/flint-core.git", tag = "v1.1.3" }
+flint-core = { git = "https://github.com/FlintTestMC/flint-core.git" }
 
 # Async
 tokio = { version = "1.49", features = [
