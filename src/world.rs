@@ -170,7 +170,7 @@ impl SteelTestWorld {
                     chunk_map
                         .world_gen_context
                         .generator
-                        .fill_from_noise(&chunk);
+                        .fill_from_noise(&chunk, None);
                 }
 
                 // Upgrade to full LevelChunk and notify Full status
