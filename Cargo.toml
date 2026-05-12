@@ -13,7 +13,7 @@ inherits = "release"
 
 [dependencies]
 # Internal crates
-steel-core = { git = "https://github.com/Steel-Foundation/SteelMC.git"}# , features = ["flint"]}
+steel-core = { git = "https://github.com/Steel-Foundation/SteelMC.git", features = ["flint"]}
 steel-protocol = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
 steel-registry = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
 steel-utils = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
