@@ -53,7 +53,7 @@ jobs:
         timeout-minutes: 15
         working-directory: flint-steel
         env:
-          TEST_PATH: ${{ github.workspace }}/flint/FlintBenchmark
+          TEST_PATH: ${{ github.workspace }}/flint/FlintBenchmark/tests
         run: cargo test --profile cicd --lib -p flint-steel test_run_all_flint_benchmarks -- --nocapture
 
       - name: Upload Flint summary
