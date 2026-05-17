@@ -7,7 +7,7 @@ use std::sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
 };
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use flint_core::Block;
 use flint_core::{BlockPos as FlintBlockPos, FlintPlayer, FlintWorld};
@@ -22,7 +22,7 @@ use steel_utils::Identifier;
 use steel_utils::locks::SyncMutex;
 use steel_utils::types::{Difficulty, GameType};
 use steel_utils::{BlockPos, ChunkPos, types::UpdateFlags};
-use tokio::time::sleep;
+use tokio::time::timeout;
 
 use crate::convert::{flint_block_to_state_id, flint_pos_to_steel, state_id_to_block};
 use crate::player::SteelTestPlayer;
@@ -115,13 +115,7 @@ impl SteelTestWorld {
     /// This is intended for testing only. It blocks until the chunk is loaded
     /// from storage. For RAM-only storage, this creates empty chunks on-demand.
     fn ensure_chunk_at(&self, pos: &BlockPos) {
-        // Bound the drive loop to avoid an infinite loop if generation never
-        // completes.
-        const MAX_ITERS: usize = 10_000;
-
-        let chunk_x = pos.x() >> 4;
-        let chunk_z = pos.z() >> 4;
-        let chunk_pos = ChunkPos::new(chunk_x, chunk_z);
+        let chunk_pos = ChunkPos::new(pos.x() >> 4, pos.z() >> 4);
 
         // Fast path: a retained handle that is already Ready means the chunk
         // is loaded at Full and its ticket is held — nothing to do.
@@ -131,6 +125,30 @@ impl SteelTestWorld {
             return;
         }
 
+        // Retain the handle so the ticket stays alive for the world's
+        // lifetime (the chunk would unload if the handle were dropped).
+        let handle = self.drive_chunk_request(chunk_pos);
+        self.chunk_requests.lock().insert(chunk_pos, handle);
+    }
+
+    /// Requests the chunk at `chunk_pos` and blocks until it reaches `Full`.
+    ///
+    /// `World::tick_game` does not drive chunk scheduling (in production that
+    /// runs on a separate loop), so this drives `tick_scheduling` itself.
+    /// Scheduling must keep being driven until the center generation task is
+    /// spawned: `ChunkGenerationTask::new` reads every neighbour holder in the
+    /// generation radius and panics if one is missing, and those holders are
+    /// only created by ticket propagation across multiple scheduling ticks.
+    /// Once the task is spawned it self-drives sub-layers via `apply_step`.
+    ///
+    /// The returned handle owns the chunk's ticket and must be retained.
+    ///
+    /// # Panics
+    /// Panics if the chunk does not reach `Full` within 30 seconds, or if the
+    /// request becomes disallowed/cancelled. This is a test framework: a
+    /// missing chunk silently corrupts every downstream assertion, so failing
+    /// loudly is correct.
+    fn drive_chunk_request(&self, chunk_pos: ChunkPos) -> ChunkRequestHandle {
         let chunk_map = &self.world.chunk_map;
 
         // Ticket-owned request: adds a ticket and lets the normal scheduling /
@@ -138,40 +156,40 @@ impl SteelTestWorld {
         let handle =
             chunk_map.request_chunk(chunk_pos, ChunkStatus::Full, ChunkTicketKind::Command);
 
-        // `World::tick_game` does not drive scheduling (it runs on a separate
-        // loop in production), so drive it here until the request is Ready.
-        // Bounded to avoid an infinite loop if generation never completes.
         let rt = runtime();
-        let mut ready = false;
-        for _ in 0..MAX_ITERS {
+        let deadline = Instant::now() + Duration::from_secs(30);
+
+        while Instant::now() < deadline {
             chunk_map.tick_scheduling();
-            match handle.poll() {
-                ChunkRequestState::Ready => {
-                    ready = true;
-                    break;
-                }
-                ChunkRequestState::Cancelled => {
-                    tracing::error!("Chunk request for {chunk_pos:?} was cancelled");
-                    return;
-                }
-                ChunkRequestState::Pending { .. } => {
-                    // Yield so async generation tasks on the chunk runtime
-                    // can make progress before the next poll.
-                    rt.block_on(async {
-                        sleep(Duration::from_millis(1)).await;
-                    });
-                }
+
+            // The holder is created by ticket propagation inside
+            // `tick_scheduling`; it may not exist on the first iterations.
+            let Some(holder) = chunk_map
+                .chunks
+                .read_sync(&chunk_pos, |_, holder| holder.clone())
+            else {
+                continue;
+            };
+
+            // Race the real status-change notification against a short timeout
+            // so we return the instant the chunk hits Full, while still
+            // re-driving scheduling if it is not ready yet.
+            match rt.block_on(async {
+                timeout(
+                    Duration::from_millis(1),
+                    holder.await_chunk(ChunkStatus::Full),
+                )
+                .await
+            }) {
+                Ok(Some(_)) => return handle,
+                Ok(None) => panic!(
+                    "chunk {chunk_pos:?} request became disallowed or cancelled before reaching Full"
+                ),
+                Err(_) => {} // timed out waiting; re-drive scheduling
             }
         }
 
-        if !ready {
-            tracing::error!("Chunk {chunk_pos:?} did not reach Full status in time");
-            return;
-        }
-
-        // Retain the handle so the ticket stays alive for the world's
-        // lifetime (the chunk would unload if the handle were dropped).
-        self.chunk_requests.lock().insert(chunk_pos, handle);
+        panic!("chunk {chunk_pos:?} did not reach Full status within 30s");
     }
 }
 

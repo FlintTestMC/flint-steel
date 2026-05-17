@@ -1,6 +1,6 @@
 [package]
 name = "flint-steel"
-version = "1.1.5"
+version = "1.1.6"
 edition = "2024"
 description = "Flint testing framework integration for SteelMC"
 
@@ -58,11 +58,10 @@ rustc-hash = "2.1.1"
 
 # Serialization (for flint-core compatibility)
 dotenvy = "0.15.7"
-toml = "1.1"
+toml = "0.8.23"
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
-toml = "1.1"
 
 [lints.rust]
 missing_docs = "warn"
