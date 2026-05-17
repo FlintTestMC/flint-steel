@@ -2,7 +2,7 @@
 # config.toml is gitignored — this patch applies to all profiles (release, flint, cicd, etc.)
 
 [patch."ssh://git@github.com/Steel-Foundation/SteelMC.git"]
-steel-core     = { path = "../SteelMC/steel-core" }
+steel-core     = { path = "../SteelMC/steel-core" , feature=["flint"]}
 steel-protocol = { path = "../SteelMC/steel-protocol" }
 steel-registry = { path = "../SteelMC/steel-registry" }
 steel-utils    = { path = "../SteelMC/steel-utils" }

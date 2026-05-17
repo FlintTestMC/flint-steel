@@ -7,21 +7,22 @@ use std::sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
 };
+use std::time::Duration;
 
 use flint_core::Block;
 use flint_core::{BlockPos as FlintBlockPos, FlintPlayer, FlintWorld};
-use futures::executor;
-use steel_core::chunk::chunk_access::{ChunkAccess, ChunkStatus};
-use steel_core::chunk::chunk_holder::ChunkHolder;
-use steel_core::chunk::proto_chunk::ProtoChunk;
-use steel_core::chunk::section::{ChunkSection, Sections};
+use rustc_hash::FxHashMap;
+use steel_core::chunk::chunk_access::ChunkStatus;
+use steel_core::chunk::chunk_request::{ChunkRequestHandle, ChunkRequestState, ChunkTicketKind};
 use steel_core::level_data::WorldGenerationSettings;
 use steel_core::world::{World, WorldConfig, WorldStorageConfig};
-use steel_core::worldgen::{ChunkGenerator, ChunkGeneratorType, EmptyChunkGenerator};
+use steel_core::worldgen::{ChunkGeneratorType, EmptyChunkGenerator};
 use steel_registry::vanilla_dimension_types::OVERWORLD;
 use steel_utils::Identifier;
+use steel_utils::locks::SyncMutex;
 use steel_utils::types::{Difficulty, GameType};
 use steel_utils::{BlockPos, ChunkPos, types::UpdateFlags};
+use tokio::time::sleep;
 
 use crate::convert::{flint_block_to_state_id, flint_pos_to_steel, state_id_to_block};
 use crate::player::SteelTestPlayer;
@@ -39,6 +40,11 @@ pub struct SteelTestWorld {
     world: Arc<World>,
     /// Current tick count (for `FlintWorld` trait).
     tick: AtomicU64,
+    /// Active chunk requests, keyed by chunk position.
+    ///
+    /// Each handle owns the chunk's tickets; retaining it for the world's
+    /// lifetime keeps the chunk permanently loaded (it unloads on drop).
+    chunk_requests: SyncMutex<FxHashMap<ChunkPos, ChunkRequestHandle>>,
 }
 
 impl SteelTestWorld {
@@ -94,6 +100,7 @@ impl SteelTestWorld {
         Self {
             world,
             tick: AtomicU64::new(0),
+            chunk_requests: SyncMutex::new(FxHashMap::default()),
         }
     }
 
@@ -108,81 +115,63 @@ impl SteelTestWorld {
     /// This is intended for testing only. It blocks until the chunk is loaded
     /// from storage. For RAM-only storage, this creates empty chunks on-demand.
     fn ensure_chunk_at(&self, pos: &BlockPos) {
+        // Bound the drive loop to avoid an infinite loop if generation never
+        // completes.
+        const MAX_ITERS: usize = 10_000;
+
         let chunk_x = pos.x() >> 4;
         let chunk_z = pos.z() >> 4;
         let chunk_pos = ChunkPos::new(chunk_x, chunk_z);
 
+        // Fast path: a retained handle that is already Ready means the chunk
+        // is loaded at Full and its ticket is held — nothing to do.
+        if let Some(handle) = self.chunk_requests.lock().get(&chunk_pos)
+            && handle.poll() == ChunkRequestState::Ready
+        {
+            return;
+        }
+
         let chunk_map = &self.world.chunk_map;
 
-        // Check if already loaded
-        if chunk_map.chunks.contains_sync(&chunk_pos) {
-            return;
-        }
+        // Ticket-owned request: adds a ticket and lets the normal scheduling /
+        // generation pipeline create the holder and generate it to Full.
+        let handle =
+            chunk_map.request_chunk(chunk_pos, ChunkStatus::Full, ChunkTicketKind::Command);
 
-        // Get dimension info from world
-        let Some(world) = chunk_map.world_gen_context.weak_world().upgrade() else {
-            tracing::error!("World has been dropped, cannot load chunk");
-            return;
-        };
-        let dimension = &world.dimension_type;
-        let min_y = dimension.min_y;
-        let height = dimension.height;
-        let level = chunk_map.world_gen_context.weak_world();
-
-        // Block on async storage load
-        let storage = &chunk_map.storage;
-        let level_clone = level.clone();
-        let result = executor::block_on(async {
-            storage
-                .load_chunk(chunk_pos, min_y, height, level_clone)
-                .await
-        });
-
-        match result {
-            Ok(Some((chunk, _status))) => {
-                // Insert the chunk into the map
-                // Use ticket level 0 (highest priority) for test chunks
-                let holder = ChunkHolder::new(chunk_pos, 0, min_y, height);
-                holder.insert_chunk(chunk, ChunkStatus::Full);
-
-                // Use insert_sync since we're already in a blocking context
-                // and the scc HashMap handles concurrent access
-                let _ = chunk_map.chunks.insert_sync(chunk_pos, Arc::new(holder));
-            }
-            Ok(None) => {
-                // Chunk doesn't exist in storage - generate it
-                let holder = Arc::new(ChunkHolder::new(chunk_pos, 0, min_y, height));
-
-                // Create empty sections (same as chunk_status_tasks::empty)
-                let sections = (0..chunk_map.world_gen_context.section_count())
-                    .map(|_| ChunkSection::new_empty())
-                    .collect::<Vec<_>>()
-                    .into_boxed_slice();
-
-                let proto_chunk =
-                    ProtoChunk::new(Sections::from_owned(sections), chunk_pos, min_y, height);
-
-                // Insert with Empty status so try_chunk will work
-                holder.insert_chunk(ChunkAccess::Proto(proto_chunk), ChunkStatus::Empty);
-
-                // Run generator (fills blocks for flat world, no-op for empty world)
-                if let Some(chunk) = holder.try_chunk(ChunkStatus::Empty) {
-                    chunk_map
-                        .world_gen_context
-                        .generator
-                        .fill_from_noise(&chunk, None);
+        // `World::tick_game` does not drive scheduling (it runs on a separate
+        // loop in production), so drive it here until the request is Ready.
+        // Bounded to avoid an infinite loop if generation never completes.
+        let rt = runtime();
+        let mut ready = false;
+        for _ in 0..MAX_ITERS {
+            chunk_map.tick_scheduling();
+            match handle.poll() {
+                ChunkRequestState::Ready => {
+                    ready = true;
+                    break;
                 }
-
-                // Upgrade to full LevelChunk and notify Full status
-                holder.upgrade_to_full(level);
-                holder.notify_status(ChunkStatus::Full);
-
-                let _ = chunk_map.chunks.insert_sync(chunk_pos, holder);
-            }
-            Err(e) => {
-                tracing::error!("Failed to load chunk {chunk_pos:?}: {e}");
+                ChunkRequestState::Cancelled => {
+                    tracing::error!("Chunk request for {chunk_pos:?} was cancelled");
+                    return;
+                }
+                ChunkRequestState::Pending { .. } => {
+                    // Yield so async generation tasks on the chunk runtime
+                    // can make progress before the next poll.
+                    rt.block_on(async {
+                        sleep(Duration::from_millis(1)).await;
+                    });
+                }
             }
         }
+
+        if !ready {
+            tracing::error!("Chunk {chunk_pos:?} did not reach Full status in time");
+            return;
+        }
+
+        // Retain the handle so the ticket stays alive for the world's
+        // lifetime (the chunk would unload if the handle were dropped).
+        self.chunk_requests.lock().insert(chunk_pos, handle);
     }
 }
 
