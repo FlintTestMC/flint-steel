@@ -67,7 +67,8 @@ mod tests {
     struct FlintConfig {
         filter: Option<FilterConfig>,
         /// Base URL of the flint-viz instance to embed in failure URLs.
-        /// Falls back to `FLINT_VIZ_URL` env var, then `http://localhost:7878`.
+        /// Priority: `FLINT_VIZ_URL` env var > toml `viz_url` > default.
+        #[serde(alias = "flint_viz_url", alias = "FLINT_VIZ_URL")]
         viz_url: Option<String>,
     }
 

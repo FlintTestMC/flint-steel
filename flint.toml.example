@@ -1,3 +1,6 @@
+# The test runner accepts `viz_url`, `flint_viz_url`, or `FLINT_VIZ_URL`.
+# flint_viz_url = "http://localhost:7878"
+
 [filter]
 implemented_only = true
 

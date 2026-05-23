@@ -133,8 +133,8 @@ dependencies = [
 
 [[package]]
 name = "cfb8"
-version = "0.9.0"
-source = "git+https://github.com/RustCrypto/block-modes?branch=master#e9a033635763b1cc164fcad0a09d311e5d89de5b"
+version = "0.9.1"
+source = "git+https://github.com/RustCrypto/block-modes?branch=master#fa66779936bd89ad59fd7a346ded34b03788bc39"
 dependencies = [
  "cipher",
 ]
@@ -164,9 +164,9 @@ dependencies = [
 
 [[package]]
 name = "cipher"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e34d8227fe1ba289043aeb13792056ff80fd6de1a9f49137a5f499de8e8c78ea"
+checksum = "e8cf2a2c93cd704877c0858356ed03480ff301ee950b43f1cbe4573b088bfa6c"
 dependencies = [
  "crypto-common",
  "inout",
@@ -193,7 +193,7 @@ version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "faf9468729b8cbcea668e36183cb69d317348c2e08e994829fb56ebfdfbaac34"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -333,9 +333,9 @@ dependencies = [
 
 [[package]]
 name = "crypto-common"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77727bb15fa921304124b128af125e7e3b968275d1b108b379190264f4423710"
+checksum = "ce6e4c961d6cd6c9a86db418387425e8bdeaf05b3c8bc1411e6dca4c252f1453"
 dependencies = [
  "hybrid-array",
 ]
@@ -480,7 +480,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1680,7 +1680,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1979,7 +1979,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a766e1110788c36f4fa1c2b71b387a7815aa65f88ce0229841826633d93723e"
 dependencies = [
  "libc",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2000,7 +2000,7 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 
 [[package]]
 name = "steel-core"
-version = "0.5.0+mc26.1"
+version = "0.6.3+mc26.1"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -2047,7 +2047,7 @@ dependencies = [
 
 [[package]]
 name = "steel-crypto"
-version = "0.5.0+mc26.1"
+version = "0.6.3+mc26.1"
 dependencies = [
  "base64",
  "log",
@@ -2063,7 +2063,7 @@ dependencies = [
 
 [[package]]
 name = "steel-macros"
-version = "0.5.0+mc26.1"
+version = "0.6.3+mc26.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2072,7 +2072,7 @@ dependencies = [
 
 [[package]]
 name = "steel-protocol"
-version = "0.5.0+mc26.1"
+version = "0.6.3+mc26.1"
 dependencies = [
  "aes",
  "cfb8",
@@ -2095,7 +2095,7 @@ dependencies = [
 
 [[package]]
 name = "steel-registry"
-version = "0.5.0+mc26.1"
+version = "0.6.3+mc26.1"
 dependencies = [
  "flate2",
  "glam",
@@ -2116,7 +2116,7 @@ dependencies = [
 
 [[package]]
 name = "steel-utils"
-version = "0.5.0+mc26.1"
+version = "0.6.3+mc26.1"
 dependencies = [
  "bitflags",
  "crc32c",
@@ -2143,7 +2143,7 @@ dependencies = [
 
 [[package]]
 name = "steel-worldgen"
-version = "0.5.0+mc26.1"
+version = "0.6.3+mc26.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2692,7 +2692,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
