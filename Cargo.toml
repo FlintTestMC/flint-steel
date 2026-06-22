@@ -13,7 +13,7 @@ inherits = "release"
 
 [dependencies]
 # Internal crates
-steel-core = { git = "https://github.com/Steel-Foundation/SteelMC.git", features = ["flint"]}
+steel-core = { git = "https://github.com/Steel-Foundation/SteelMC.git", features = ["flint"] }
 steel-protocol = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
 steel-registry = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
 steel-utils = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
@@ -23,11 +23,12 @@ glam = "0.32"
 uuid = { version = "1.20", features = ["serde", "v4"] }
 
 # Text components for disconnect messages
-text_components = { git = "https://github.com/Steel-Foundation/TextComponents.git", features = [
-    "custom",
-    "nbt",
-    "serde",
-] }
+text_components = { git = "https://github.com/Steel-Foundation/TextComponents.git",
+    rev = "e058b936e66b496385ba162b2e20344d14572a6a", features = [
+        "custom",
+        "nbt",
+        "serde",
+    ] }
 
 # Flint testing framework
 flint-core = { git = "https://github.com/FlintTestMC/flint-core.git" }

@@ -71,6 +71,10 @@ impl SteelTestPlayer {
             enforce_secure_chat: false,
             compression: None,
             server_links: None,
+            allow_flight: true,
+            auth_server: None,
+            chat_spam_threshold_seconds: 10,
+            command_spam_threshold_seconds: 10
         });
         let player = Arc::new_cyclic(|player_weak| {
             let p = Player::new(
@@ -84,7 +88,7 @@ impl SteelTestPlayer {
                 ClientInformation::default(),
             );
             // Mark as loaded so interactions work
-            p.client_loaded.store(true, sync::atomic::Ordering::Relaxed);
+            p.set_client_loaded(true);
             p
         });
 
@@ -262,7 +266,7 @@ impl FlintPlayer for SteelTestPlayer {
     }
 
     fn set_game_mode(&mut self, mode: GameMode) {
-        self.player.game_mode.store(match mode {
+        self.player.set_game_mode(match mode {
             GameMode::Survival => GameType::Survival,
             GameMode::Creative => GameType::Creative,
             GameMode::Adventure => GameType::Adventure,
