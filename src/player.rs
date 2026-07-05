@@ -74,7 +74,8 @@ impl SteelTestPlayer {
             allow_flight: true,
             auth_server: None,
             chat_spam_threshold_seconds: 10,
-            command_spam_threshold_seconds: 10
+            command_spam_threshold_seconds: 10,
+            chunk_generation_threads: None,
         });
         let player = Arc::new_cyclic(|player_weak| {
             let p = Player::new(
