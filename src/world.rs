@@ -7,6 +7,7 @@ use std::sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
 };
+use std::thread;
 use std::time::{Duration, Instant};
 
 use flint_core::Block;
@@ -22,7 +23,6 @@ use steel_utils::Identifier;
 use steel_utils::locks::SyncMutex;
 use steel_utils::types::{Difficulty, GameType};
 use steel_utils::{BlockPos, ChunkPos, types::UpdateFlags};
-use tokio::time::timeout;
 
 use crate::convert::{flint_block_to_state_id, flint_pos_to_steel, state_id_to_block};
 use crate::player::SteelTestPlayer;
@@ -158,33 +158,17 @@ impl SteelTestWorld {
         let handle =
             chunk_map.request_chunk(chunk_pos, ChunkStatus::Full, ChunkTicketKind::Command);
 
-        let rt = runtime();
         let deadline = Instant::now() + Duration::from_secs(30);
 
         while Instant::now() < deadline {
             chunk_map.drive_scheduling_for_flint();
 
-            // The holder is created by ticket propagation inside
-            // `drive_scheduling_for_flint`; it may not exist on the first iterations.
-            let Some(holder) = chunk_map.holder_for_flint(chunk_pos) else {
-                continue;
-            };
-
-            // Race the real status-change notification against a short timeout
-            // so we return the instant the chunk hits Full, while still
-            // re-driving scheduling if it is not ready yet.
-            match rt.block_on(async {
-                timeout(
-                    Duration::from_millis(1),
-                    holder.await_chunk(ChunkStatus::Full),
-                )
-                .await
-            }) {
-                Ok(Some(_)) => return handle,
-                Ok(None) => panic!(
-                    "chunk {chunk_pos:?} request became disallowed or cancelled before reaching Full"
+            match handle.poll() {
+                ChunkRequestState::Ready => return handle,
+                ChunkRequestState::Cancelled => panic!(
+                    "chunk {chunk_pos:?} request was cancelled before reaching Full"
                 ),
-                Err(_) => {} // timed out waiting; re-drive scheduling
+                ChunkRequestState::Pending { .. } => thread::sleep(Duration::from_millis(1)),
             }
         }
 
