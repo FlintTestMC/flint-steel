@@ -12,8 +12,8 @@ use std::time::{Duration, Instant};
 use flint_core::Block;
 use flint_core::{BlockPos as FlintBlockPos, FlintPlayer, FlintWorld};
 use rustc_hash::FxHashMap;
-use steel_core::chunk::chunk_access::ChunkStatus;
 use steel_core::chunk::chunk_request::{ChunkRequestHandle, ChunkRequestState, ChunkTicketKind};
+use steel_core::chunk::status::ChunkStatus;
 use steel_core::level_data::WorldGenerationSettings;
 use steel_core::world::{World, WorldConfig, WorldStorageConfig};
 use steel_core::worldgen::{ChunkGeneratorType, EmptyChunkGenerator};
@@ -76,6 +76,7 @@ impl SteelTestWorld {
             },
             view_distance: 10,
             simulation_distance: 10,
+            max_chained_neighbor_updates: -1,
             compression: None,
             is_flat: false,
             sea_level: 63,
@@ -134,7 +135,8 @@ impl SteelTestWorld {
     /// Requests the chunk at `chunk_pos` and blocks until it reaches `Full`.
     ///
     /// `World::tick_game` does not drive chunk scheduling (in production that
-    /// runs on a separate loop), so this drives `tick_scheduling` itself.
+    /// runs on a separate loop), so this drives scheduling itself via the
+    /// `flint`-gated `ChunkMap::drive_scheduling_for_flint` hook.
     /// Scheduling must keep being driven until the center generation task is
     /// spawned: `ChunkGenerationTask::new` reads every neighbour holder in the
     /// generation radius and panics if one is missing, and those holders are
@@ -160,14 +162,11 @@ impl SteelTestWorld {
         let deadline = Instant::now() + Duration::from_secs(30);
 
         while Instant::now() < deadline {
-            chunk_map.tick_scheduling();
+            chunk_map.drive_scheduling_for_flint();
 
             // The holder is created by ticket propagation inside
-            // `tick_scheduling`; it may not exist on the first iterations.
-            let Some(holder) = chunk_map
-                .chunks
-                .read_sync(&chunk_pos, |_, holder| holder.clone())
-            else {
+            // `drive_scheduling_for_flint`; it may not exist on the first iterations.
+            let Some(holder) = chunk_map.holder_for_flint(chunk_pos) else {
                 continue;
             };
 

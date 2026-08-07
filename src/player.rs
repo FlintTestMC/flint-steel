@@ -19,7 +19,6 @@ use steel_core::player::player_inventory::PlayerInventory;
 use steel_core::player::{ClientInformation, GameProfile, Player, PlayerConnection};
 use steel_core::server::Server;
 use steel_core::world::World;
-use steel_registry::data_components::ComponentData;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::{REGISTRY, RegistryExt};
 use steel_utils::Identifier;
@@ -63,6 +62,7 @@ impl SteelTestPlayer {
             max_players: 20,
             view_distance: 10,
             simulation_distance: 10,
+            max_chained_neighbor_updates: -1,
             online_mode: false,
             encryption: false,
             motd: String::new(),
@@ -76,8 +76,11 @@ impl SteelTestPlayer {
             chat_spam_threshold_seconds: 10,
             command_spam_threshold_seconds: 10,
             chunk_generation_threads: None,
+            profile_server: None,
+            packet_workers: None,
+            chunk_encoding_threads: None,
         });
-        let player = Arc::new_cyclic(|player_weak| {
+        let player = Arc::new({
             let p = Player::new(
                 gameprofile,
                 player_connection,
@@ -85,7 +88,6 @@ impl SteelTestPlayer {
                 sync::Weak::<Server>::new(),
                 runtime_config,
                 -1, // Negative entity ID for test players
-                player_weak,
                 ClientInformation::default(),
             );
             // Mark as loaded so interactions work
@@ -183,22 +185,16 @@ fn stack_to_flint_item(stack: &ItemStack, requested_data: Vec<String>) -> Option
     let mut map: FxHashMap<String, String> = FxHashMap::default();
     for key in requested_data {
         if let Some(data) = stack.get_effective_value_raw(&Identifier::vanilla(key.clone())) {
-            match data {
-                ComponentData::Empty => {
-                    map.insert(key, "".to_string());
-                }
-                ComponentData::Bool(b) => {
-                    map.insert(key, b.to_string());
-                }
-                ComponentData::I32(b) => {
-                    map.insert(key, b.to_string());
-                }
-                ComponentData::Float(b) => {
-                    map.insert(key, b.to_string());
-                }
-                // TODO: handle other data types then needed
-                _ => {}
+            if data.downcast_ref::<()>().is_some() {
+                map.insert(key, String::new());
+            } else if let Some(b) = data.downcast_ref::<bool>() {
+                map.insert(key, b.to_string());
+            } else if let Some(i) = data.downcast_ref::<i32>() {
+                map.insert(key, i.to_string());
+            } else if let Some(f) = data.downcast_ref::<f32>() {
+                map.insert(key, f.to_string());
             }
+            // TODO: handle other data types then needed
         }
     }
     Some(Item {
