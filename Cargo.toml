@@ -60,6 +60,7 @@ rustc-hash = "2.1.1"
 # Serialization (for flint-core compatibility)
 dotenvy = "0.15.7"
 toml = "1.1.3"
+anyhow = "1.0.104"
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }

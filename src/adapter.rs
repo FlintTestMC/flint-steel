@@ -39,8 +39,8 @@ impl Default for SteelAdapter {
 }
 
 impl FlintAdapter for SteelAdapter {
-    fn create_test_world(&self) -> Box<dyn FlintWorld> {
-        Box::new(SteelTestWorld::new())
+    fn create_test_world(&self) -> Result<Box<dyn FlintWorld + 'static>, anyhow::Error> {
+        Ok(Box::new(SteelTestWorld::new()))
     }
 
     fn server_info(&self) -> ServerInfo {

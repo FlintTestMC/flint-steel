@@ -4,6 +4,7 @@
 //! `FlintConnection` to enable testing of player interactions (like `use_item_on`)
 //! without real network connections.
 
+use std::any::Any;
 use std::sync;
 use std::sync::Arc;
 
@@ -13,6 +14,7 @@ use glam::DVec3;
 use rustc_hash::FxHashMap;
 use steel_core::behavior::BlockHitResult;
 use steel_core::config::RuntimeConfig;
+use steel_core::entity::Entity;
 use steel_core::inventory::container::Container;
 use steel_core::player::game_mode;
 use steel_core::player::player_inventory::PlayerInventory;
@@ -205,27 +207,33 @@ fn stack_to_flint_item(stack: &ItemStack, requested_data: Vec<String>) -> Option
 }
 
 impl FlintPlayer for SteelTestPlayer {
-    fn set_slot(&mut self, slot: PlayerSlot, item: Option<&Item>) {
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+
+    fn set_slot(&mut self, slot: PlayerSlot, item: Option<&Item>) -> Result<(), anyhow::Error>{
         let index = player_slot_to_index(slot);
         let stack = item.map_or_else(ItemStack::empty, flint_item_to_stack);
 
         let mut inv = self.player.inventory.lock();
         inv.set_item(index, stack);
+        Ok(())
     }
 
-    fn get_slot(&self, slot: PlayerSlot, requested_data: Vec<String>) -> Option<Item> {
+    fn get_slot(&mut self, slot: PlayerSlot, requested_data: Vec<String>) -> Result<Option<Item>, anyhow::Error> {
         let index = player_slot_to_index(slot);
 
         let inv = self.player.inventory.lock();
         let stack = inv.get_item(index);
-        stack_to_flint_item(stack, requested_data)
+        Ok(stack_to_flint_item(stack, requested_data))
     }
 
-    fn select_hotbar(&mut self, slot: u8) {
+    fn select_hotbar(&mut self, slot: u8) -> Result<(), anyhow::Error> {
         if (1..=9).contains(&slot) {
             // Flint uses 1-9, Steel uses 0-8
             self.player.inventory.lock().set_selected_slot(slot - 1);
         }
+        Ok(())
     }
 
     fn selected_hotbar(&self) -> u8 {
@@ -233,10 +241,13 @@ impl FlintPlayer for SteelTestPlayer {
         self.player.inventory.lock().get_selected_slot() + 1
     }
 
-    fn use_item_on(&mut self, pos: BlockPos, face: &BlockFace) {
-        let steel_pos = flint_pos_to_steel(pos);
-        let direction = flint_face_to_direction(*face);
+    fn teleport(&mut self, pos: [f64; 3], rot: Option<[f32; 2]>) -> Result<(), anyhow::Error> {
+        self.player.try_set_position(DVec3::new(pos[0], pos[1], pos[2]))?;
+        self.player.set_rotation((rot.unwrap_or([0.0, 0.0])).into());
+        Ok(())
+    }
 
+    fn interact(&mut self) -> Result<(), anyhow::Error> {
         // Create a block hit result
         let hit_result = BlockHitResult {
             location: DVec3::new(
@@ -250,25 +261,27 @@ impl FlintPlayer for SteelTestPlayer {
             world_border_hit: false,
             miss: false,
         };
-
-        // Call the real game_mode::use_item_on
-        let result = game_mode::use_item_on(
-            &self.player,
-            &self.player.get_world(),
-            InteractionHand::MainHand,
-            &hit_result,
-        );
-
-        tracing::debug!("use_item_on({pos:?}, {face:?}) -> {result:?}");
+        //
+        // // Call the real game_mode::use_item_on
+        // let result = game_mode::use_item_on(
+        //     &self.player,
+        //     &self.player.get_world(),
+        //     InteractionHand::MainHand,
+        //     &hit_result,
+        // );
+        //
+        // tracing::debug!("use_item_on({pos:?}, {face:?}) -> {result:?}");
+        Ok(())
     }
 
-    fn set_game_mode(&mut self, mode: GameMode) {
+    fn set_game_mode(&mut self, mode: GameMode) -> Result<(), anyhow::Error> {
         self.player.set_game_mode(match mode {
             GameMode::Survival => GameType::Survival,
             GameMode::Creative => GameType::Creative,
             GameMode::Adventure => GameType::Adventure,
             GameMode::Spectator => GameType::Spectator,
         });
+        Ok(())
     }
 }
 

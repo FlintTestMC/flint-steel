@@ -183,32 +183,37 @@ impl Default for SteelTestWorld {
 }
 
 impl FlintWorld for SteelTestWorld {
-    fn do_tick(&mut self) {
+    fn do_tick(&mut self) -> Result<(), anyhow::Error> {
         let tick_count = self.tick.fetch_add(1, Ordering::SeqCst);
 
         // Run a real world tick
         // Note: For testing we run with `runs_normally = true`
         self.world.tick_game(tick_count, true);
+        Ok(())
     }
 
     fn current_tick(&self) -> u64 {
         self.tick.load(Ordering::SeqCst)
     }
 
-    fn get_block(&self, pos: FlintBlockPos) -> Block {
+    fn get_time(&self) -> Result<u64, anyhow::Error> {
+        Ok(self.world.game_time() as u64)
+    }
+
+    fn get_block(&self, pos: FlintBlockPos, requested_nbt: &[String]) -> Result<Block, anyhow::Error> {
         let steel_pos = flint_pos_to_steel(pos);
 
         // Ensure the chunk is loaded (for RAM storage this creates empty chunks)
         self.ensure_chunk_at(&steel_pos);
 
         let state = self.world.get_block_state(steel_pos);
-        state_id_to_block(state)
+        Ok(state_id_to_block(state))
     }
 
-    fn set_block(&mut self, pos: FlintBlockPos, block: &Block) {
+    fn set_block(&mut self, pos: FlintBlockPos, block: &Block) -> Result<(), anyhow::Error> {
         let Some(state_id) = flint_block_to_state_id(block) else {
             tracing::warn!("Unknown block: {} - skipping placement", block.id);
-            return;
+            return Ok(());
         };
 
         let steel_pos = flint_pos_to_steel(pos);
@@ -222,6 +227,7 @@ impl FlintWorld for SteelTestWorld {
         // - Block behavior callbacks (on_place, etc.)
         self.world
             .set_block(steel_pos, state_id, UpdateFlags::UPDATE_ALL);
+        Ok(())
     }
 
     fn create_player(&mut self) -> Box<dyn FlintPlayer> {
