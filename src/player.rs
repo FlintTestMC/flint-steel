@@ -50,7 +50,7 @@ impl SteelTestPlayer {
         let test_conn = connection.clone(); // shares inner state via Arc
 
         // Create a dummy game profile
-        let gameprofile = GameProfile {
+        let game_profile = GameProfile {
             id: Uuid::new_v4(),
             name: "TestPlayer".to_string(),
             properties: vec![],
@@ -83,7 +83,7 @@ impl SteelTestPlayer {
         });
         let player = Arc::new({
             let p = Player::new(
-                gameprofile,
+                game_profile,
                 player_connection,
                 world,
                 sync::Weak::<Server>::new(),
