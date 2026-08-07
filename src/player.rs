@@ -8,11 +8,10 @@ use std::any::Any;
 use std::sync;
 use std::sync::Arc;
 
-use flint_core::test_spec::{BlockFace, GameMode, PlayerSlot};
-use flint_core::{BlockPos, FlintPlayer, Item};
+use flint_core::test_spec::{GameMode, PlayerSlot};
+use flint_core::{FlintPlayer, Item};
 use glam::DVec3;
 use rustc_hash::FxHashMap;
-use steel_core::behavior::BlockHitResult;
 use steel_core::config::RuntimeConfig;
 use steel_core::entity::Entity;
 use steel_core::inventory::container::Container;
@@ -20,14 +19,14 @@ use steel_core::player::game_mode;
 use steel_core::player::player_inventory::PlayerInventory;
 use steel_core::player::{ClientInformation, GameProfile, Player, PlayerConnection};
 use steel_core::server::Server;
-use steel_core::world::World;
+use steel_core::world::{ClipBlockShape, ClipFluid, World};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::{REGISTRY, RegistryExt};
 use steel_utils::Identifier;
 use steel_utils::types::{GameType, InteractionHand};
 use uuid::Uuid;
 
-use crate::convert::{flint_face_to_direction, flint_pos_to_steel};
+use crate::convert::clip_to_block_hit;
 use crate::test_connection;
 use crate::test_connection::FlintConnection;
 
@@ -248,29 +247,23 @@ impl FlintPlayer for SteelTestPlayer {
     }
 
     fn interact(&mut self) -> Result<(), anyhow::Error> {
-        // Create a block hit result
-        let hit_result = BlockHitResult {
-            location: DVec3::new(
-                f64::from(steel_pos.x()) + 0.5,
-                f64::from(steel_pos.y()) + 0.5,
-                f64::from(steel_pos.z()) + 0.5,
-            ),
-            direction,
-            block_pos: steel_pos,
-            inside: false,
-            world_border_hit: false,
-            miss: false,
+        let world = self.player.get_world();
+        let (start, end) = self.player.get_ray_endpoints();
+        let clip = world.clip(start, end, ClipBlockShape::Outline, ClipFluid::None);
+
+        let hand = InteractionHand::MainHand;
+        let result = if clip.is_miss() {
+            game_mode::use_item(&self.player, &world, hand)
+        } else {
+            game_mode::use_item_on(&self.player, &world, hand, &clip_to_block_hit(clip))
         };
-        //
-        // // Call the real game_mode::use_item_on
-        // let result = game_mode::use_item_on(
-        //     &self.player,
-        //     &self.player.get_world(),
-        //     InteractionHand::MainHand,
-        //     &hit_result,
-        // );
-        //
-        // tracing::debug!("use_item_on({pos:?}, {face:?}) -> {result:?}");
+
+        if result.should_swing_server() {
+            self.player.swing(hand, true);
+        }
+        self.player.broadcast_inventory_changes();
+
+        tracing::debug!("interact({start:?} -> {end:?}) -> {result:?}");
         Ok(())
     }
 
