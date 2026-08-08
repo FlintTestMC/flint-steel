@@ -19,6 +19,7 @@ steel-registry = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
 steel-utils = { git = "https://github.com/Steel-Foundation/SteelMC.git" }
 
 glam = "0.33"
+simdnbt = "0.10"
 # UUID
 uuid = { version = "1.20", features = ["serde", "v4"] }
 

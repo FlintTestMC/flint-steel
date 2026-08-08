@@ -3,6 +3,8 @@
 //! This module provides a test world that wraps the real `Arc<World>` from steel-core,
 //! configured with RAM-only storage for instant chunk creation without disk I/O.
 
+use std::io::Cursor;
+use std::iter;
 use std::sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
@@ -11,16 +13,19 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use flint_core::Block;
+use flint_core::test_spec::EntityNbt;
 use flint_core::{BlockPos as FlintBlockPos, FlintPlayer, FlintWorld};
 use rustc_hash::FxHashMap;
+use simdnbt::borrow::read_compound;
 use steel_core::chunk::chunk_request::{ChunkRequestHandle, ChunkRequestState, ChunkTicketKind};
 use steel_core::chunk::status::ChunkStatus;
 use steel_core::level_data::WorldGenerationSettings;
-use steel_core::world::{World, WorldConfig, WorldStorageConfig};
+use steel_core::world::{LevelReader, World, WorldConfig, WorldStorageConfig};
 use steel_core::worldgen::{ChunkGeneratorType, EmptyChunkGenerator};
 use steel_registry::vanilla_dimension_types::OVERWORLD;
 use steel_utils::Identifier;
 use steel_utils::locks::SyncMutex;
+use steel_utils::nbt::parse_snbt_compound;
 use steel_utils::types::{Difficulty, GameType};
 use steel_utils::{BlockPos, ChunkPos, types::UpdateFlags};
 
@@ -116,8 +121,11 @@ impl SteelTestWorld {
     /// This is intended for testing only. It blocks until the chunk is loaded
     /// from storage. For RAM-only storage, this creates empty chunks on-demand.
     fn ensure_chunk_at(&self, pos: &BlockPos) {
-        let chunk_pos = ChunkPos::new(pos.x() >> 4, pos.z() >> 4);
+        self.ensure_chunk(ChunkPos::new(pos.x() >> 4, pos.z() >> 4));
+    }
 
+    /// Ensures the chunk at `chunk_pos` is loaded, retaining its ticket handle.
+    fn ensure_chunk(&self, chunk_pos: ChunkPos) {
         // Fast path: a retained handle that is already Ready means the chunk
         // is loaded at Full and its ticket is held — nothing to do.
         if let Some(handle) = self.chunk_requests.lock().get(&chunk_pos)
@@ -183,6 +191,24 @@ impl Default for SteelTestWorld {
 }
 
 impl FlintWorld for SteelTestWorld {
+    fn preload_region(&mut self, region: [[i32; 3]; 2]) -> Result<(), anyhow::Error> {
+        let min_chunk = ChunkPos::new(
+            region[0][0].min(region[1][0]) >> 4,
+            region[0][2].min(region[1][2]) >> 4,
+        );
+        let max_chunk = ChunkPos::new(
+            region[0][0].max(region[1][0]) >> 4,
+            region[0][2].max(region[1][2]) >> 4,
+        );
+
+        for x in min_chunk.0.x..=max_chunk.0.x {
+            for z in min_chunk.0.y..=max_chunk.0.y {
+                self.ensure_chunk(ChunkPos::new(x, z));
+            }
+        }
+        Ok(())
+    }
+
     fn do_tick(&mut self) -> Result<(), anyhow::Error> {
         let tick_count = self.tick.fetch_add(1, Ordering::SeqCst);
 
@@ -211,7 +237,11 @@ impl FlintWorld for SteelTestWorld {
         self.ensure_chunk_at(&steel_pos);
 
         let state = self.world.get_block_state(steel_pos);
-        Ok(state_id_to_block(state))
+        let mut block = state_id_to_block(state);
+        if let Some(entity) = self.world.get_block_entity(steel_pos) {
+            block.nbt = Some(EntityNbt::from_string_values(iter::empty()));
+        }
+        Ok(block)
     }
 
     fn set_block(&mut self, pos: FlintBlockPos, block: &Block) -> Result<(), anyhow::Error> {
@@ -225,12 +255,18 @@ impl FlintWorld for SteelTestWorld {
         // Ensure the chunk is loaded before setting blocks
         self.ensure_chunk_at(&steel_pos);
 
-        // Use the real World::set_block which handles:
-        // - Neighbor updates
-        // - Shape updates
-        // - Block behavior callbacks (on_place, etc.)
         self.world
             .set_block(steel_pos, state_id, UpdateFlags::UPDATE_ALL);
+        if let Some(nbt) = &block.nbt
+            && let Some(entity) = self.world.get_block_entity(steel_pos)
+        {
+            let compound = parse_snbt_compound(&nbt.to_snbt())?;
+            let mut bytes = Vec::new();
+            compound.write(&mut bytes);
+            let borrowed = read_compound(&mut Cursor::new(bytes.as_slice()))?;
+            entity.load_additional(&borrowed);
+            entity.set_changed();
+        }
         Ok(())
     }
 
@@ -289,6 +325,25 @@ mod tests {
             .expect("TODO: panic message");
 
         let retrieved = world.get_block([0, 64, 0], &[]).unwrap();
+        assert_eq!(retrieved.id, "minecraft:stone");
+    }
+
+    #[test]
+    fn test_preload_region_loads_chunks_spanning_multiple_blocks() {
+        init_test_registries();
+        let mut world = SteelTestWorld::new();
+
+        // Region spans chunk (0,0) and chunk (1,0): x=0..=20 crosses the x=16 chunk border.
+        world
+            .preload_region([[0, 60, 0], [20, 70, 0]])
+            .expect("preload should succeed");
+
+        // get_block/set_block must not have to drive a fresh chunk request afterwards.
+        let stone = Block::new("minecraft:stone");
+        world
+            .set_block([18, 64, 0], &stone)
+            .expect("set_block in preloaded chunk 1 should not need to load anything");
+        let retrieved = world.get_block([18, 64, 0], &[]).unwrap();
         assert_eq!(retrieved.id, "minecraft:stone");
     }
 
