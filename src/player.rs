@@ -297,7 +297,9 @@ mod tests {
         let mut player = world.create_player();
 
         let item = Item::new("minecraft:stone");
-        player.set_slot(PlayerSlot::Hotbar1, Some(&item));
+        player
+            .set_slot(PlayerSlot::Hotbar1, Some(&item))
+            .expect("TODO: panic message");
 
         let retrieved = player
             .get_slot(PlayerSlot::Hotbar1, vec![])
@@ -315,14 +317,14 @@ mod tests {
         // Default is slot 1
         assert_eq!(player.selected_hotbar(), 1);
 
-        player.select_hotbar(5);
+        player.select_hotbar(5).expect("TODO: panic message");
         assert_eq!(player.selected_hotbar(), 5);
 
         // Out of range values should be ignored
-        player.select_hotbar(0);
+        player.select_hotbar(0).expect("TODO: panic message");
         assert_eq!(player.selected_hotbar(), 5);
 
-        player.select_hotbar(10);
+        player.select_hotbar(10).expect("TODO: panic message");
         assert_eq!(player.selected_hotbar(), 5);
     }
 }

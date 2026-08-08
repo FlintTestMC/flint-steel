@@ -257,11 +257,11 @@ mod tests {
         let mut world = SteelTestWorld::new();
         assert_eq!(world.current_tick(), 0);
 
-        world.do_tick();
+        world.do_tick().expect("TODO: panic message");
         assert_eq!(world.current_tick(), 1);
 
-        world.do_tick();
-        world.do_tick();
+        world.do_tick().expect("TODO: panic message");
+        world.do_tick().expect("TODO: panic message");
         assert_eq!(world.current_tick(), 3);
     }
 
@@ -284,7 +284,9 @@ mod tests {
         let mut world = SteelTestWorld::new();
 
         let stone = Block::new("minecraft:stone");
-        world.set_block([0, 64, 0], &stone);
+        world
+            .set_block([0, 64, 0], &stone)
+            .expect("TODO: panic message");
 
         let retrieved = world.get_block([0, 64, 0], &[]).unwrap();
         assert_eq!(retrieved.id, "minecraft:stone");
@@ -297,14 +299,16 @@ mod tests {
 
         // Place a block
         let stone = Block::new("minecraft:stone");
-        world.set_block([0, 64, 0], &stone);
+        world
+            .set_block([0, 64, 0], &stone)
+            .expect("TODO: panic message");
 
         let retrieved = world.get_block([0, 64, 0], &[]).unwrap();
         assert_eq!(retrieved.id, "minecraft:stone");
 
         // Remove with air
         let air = Block::new("minecraft:air");
-        world.set_block([0, 64, 0], &air);
+        let _ = world.set_block([0, 64, 0], &air);
 
         let retrieved = world.get_block([0, 64, 0], &[]).unwrap();
         // Accept both air and void_air as valid "cleared" states
