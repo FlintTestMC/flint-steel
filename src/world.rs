@@ -161,13 +161,13 @@ impl SteelTestWorld {
         let deadline = Instant::now() + Duration::from_secs(30);
 
         while Instant::now() < deadline {
-            chunk_map.drive_scheduling_for_flint();
+            chunk_map.advance_scheduling();
 
             match handle.poll() {
                 ChunkRequestState::Ready => return handle,
-                ChunkRequestState::Cancelled => panic!(
-                    "chunk {chunk_pos:?} request was cancelled before reaching Full"
-                ),
+                ChunkRequestState::Cancelled => {
+                    panic!("chunk {chunk_pos:?} request was cancelled before reaching Full")
+                }
                 ChunkRequestState::Pending { .. } => thread::sleep(Duration::from_millis(1)),
             }
         }
@@ -200,7 +200,11 @@ impl FlintWorld for SteelTestWorld {
         Ok(self.world.game_time() as u64)
     }
 
-    fn get_block(&self, pos: FlintBlockPos, requested_nbt: &[String]) -> Result<Block, anyhow::Error> {
+    fn get_block(
+        &self,
+        pos: FlintBlockPos,
+        requested_nbt: &[String],
+    ) -> Result<Block, anyhow::Error> {
         let steel_pos = flint_pos_to_steel(pos);
 
         // Ensure the chunk is loaded (for RAM storage this creates empty chunks)
@@ -265,7 +269,7 @@ mod tests {
     fn test_get_air_by_default() {
         init_test_registries();
         let world = SteelTestWorld::new();
-        let block = world.get_block([0, 64, 0]);
+        let block = world.get_block([0, 64, 0], &[]).unwrap();
         // Empty chunks are filled with air (or void_air depending on implementation)
         assert!(
             block.id == "minecraft:air" || block.id == "minecraft:void_air",
@@ -282,7 +286,7 @@ mod tests {
         let stone = Block::new("minecraft:stone");
         world.set_block([0, 64, 0], &stone);
 
-        let retrieved = world.get_block([0, 64, 0]);
+        let retrieved = world.get_block([0, 64, 0], &[]).unwrap();
         assert_eq!(retrieved.id, "minecraft:stone");
     }
 
@@ -295,14 +299,14 @@ mod tests {
         let stone = Block::new("minecraft:stone");
         world.set_block([0, 64, 0], &stone);
 
-        let retrieved = world.get_block([0, 64, 0]);
+        let retrieved = world.get_block([0, 64, 0], &[]).unwrap();
         assert_eq!(retrieved.id, "minecraft:stone");
 
         // Remove with air
         let air = Block::new("minecraft:air");
         world.set_block([0, 64, 0], &air);
 
-        let retrieved = world.get_block([0, 64, 0]);
+        let retrieved = world.get_block([0, 64, 0], &[]).unwrap();
         // Accept both air and void_air as valid "cleared" states
         assert!(
             retrieved.id == "minecraft:air" || retrieved.id == "minecraft:void_air",

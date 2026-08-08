@@ -210,7 +210,7 @@ impl FlintPlayer for SteelTestPlayer {
         self
     }
 
-    fn set_slot(&mut self, slot: PlayerSlot, item: Option<&Item>) -> Result<(), anyhow::Error>{
+    fn set_slot(&mut self, slot: PlayerSlot, item: Option<&Item>) -> Result<(), anyhow::Error> {
         let index = player_slot_to_index(slot);
         let stack = item.map_or_else(ItemStack::empty, flint_item_to_stack);
 
@@ -219,7 +219,11 @@ impl FlintPlayer for SteelTestPlayer {
         Ok(())
     }
 
-    fn get_slot(&mut self, slot: PlayerSlot, requested_data: Vec<String>) -> Result<Option<Item>, anyhow::Error> {
+    fn get_slot(
+        &mut self,
+        slot: PlayerSlot,
+        requested_data: Vec<String>,
+    ) -> Result<Option<Item>, anyhow::Error> {
         let index = player_slot_to_index(slot);
 
         let inv = self.player.inventory.lock();
@@ -241,7 +245,8 @@ impl FlintPlayer for SteelTestPlayer {
     }
 
     fn teleport(&mut self, pos: [f64; 3], rot: Option<[f32; 2]>) -> Result<(), anyhow::Error> {
-        self.player.try_set_position(DVec3::new(pos[0], pos[1], pos[2]))?;
+        self.player
+            .try_set_position(DVec3::new(pos[0], pos[1], pos[2]))?;
         self.player.set_rotation((rot.unwrap_or([0.0, 0.0])).into());
         Ok(())
     }
@@ -296,6 +301,7 @@ mod tests {
 
         let retrieved = player
             .get_slot(PlayerSlot::Hotbar1, vec![])
+            .expect("get_slot failed")
             .expect("Slot not found");
         assert_eq!(retrieved.id, "minecraft:stone");
     }
