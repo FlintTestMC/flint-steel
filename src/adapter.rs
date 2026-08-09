@@ -26,7 +26,7 @@ impl SteelAdapter {
     pub fn new() -> Self {
         Self {
             info: ServerInfo {
-                minecraft_version: "1.21.11".to_string(),
+                minecraft_version: "26.2".to_string(),
             },
         }
     }
@@ -192,7 +192,7 @@ mod tests {
         var("FLINT_VIZ_URL")
             .ok()
             .or_else(|| cfg.viz_url.clone())
-            .unwrap_or_else(|| "http://localhost:7878".to_string())
+            .unwrap_or_else(|| "https://flinttestmc.github.io/FlintViz".to_string())
     }
 
     /// For each failing test in `summary`, print a clickable flint-viz URL with

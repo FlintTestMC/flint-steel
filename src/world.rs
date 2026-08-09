@@ -191,24 +191,6 @@ impl Default for SteelTestWorld {
 }
 
 impl FlintWorld for SteelTestWorld {
-    fn preload_region(&mut self, region: [[i32; 3]; 2]) -> Result<(), anyhow::Error> {
-        let min_chunk = ChunkPos::new(
-            region[0][0].min(region[1][0]) >> 4,
-            region[0][2].min(region[1][2]) >> 4,
-        );
-        let max_chunk = ChunkPos::new(
-            region[0][0].max(region[1][0]) >> 4,
-            region[0][2].max(region[1][2]) >> 4,
-        );
-
-        for x in min_chunk.0.x..=max_chunk.0.x {
-            for z in min_chunk.0.y..=max_chunk.0.y {
-                self.ensure_chunk(ChunkPos::new(x, z));
-            }
-        }
-        Ok(())
-    }
-
     fn do_tick(&mut self) -> Result<(), anyhow::Error> {
         let tick_count = self.tick.fetch_add(1, Ordering::SeqCst);
 
