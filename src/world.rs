@@ -4,7 +4,6 @@
 //! configured with RAM-only storage for instant chunk creation without disk I/O.
 
 use std::io::Cursor;
-use std::iter;
 use std::sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
@@ -25,7 +24,7 @@ use steel_core::worldgen::{ChunkGeneratorType, EmptyChunkGenerator};
 use steel_registry::vanilla_dimension_types::OVERWORLD;
 use steel_utils::Identifier;
 use steel_utils::locks::SyncMutex;
-use steel_utils::nbt::parse_snbt_compound;
+use steel_utils::nbt::{parse_snbt_compound, to_canonical_snbt};
 use steel_utils::types::{Difficulty, GameType};
 use steel_utils::{BlockPos, ChunkPos, types::UpdateFlags};
 
@@ -221,7 +220,16 @@ impl FlintWorld for SteelTestWorld {
         let state = self.world.get_block_state(steel_pos);
         let mut block = state_id_to_block(state);
         if let Some(entity) = self.world.get_block_entity(steel_pos) {
-            block.nbt = Some(EntityNbt::from_string_values(iter::empty()));
+            let compound = entity.save_with_full_metadata();
+            block.nbt = Some(EntityNbt::from_string_values(compound.iter().filter_map(
+                |(key, value)| {
+                    let key = key.to_owned().try_into_string().ok()?;
+                    if !requested_nbt.iter().any(|requested| requested == &key) {
+                        return None;
+                    }
+                    Some((key, to_canonical_snbt(value)?))
+                },
+            )));
         }
         Ok(block)
     }
@@ -311,14 +319,36 @@ mod tests {
     }
 
     #[test]
-    fn test_preload_region_loads_chunks_spanning_multiple_blocks() {
+    fn test_get_block_collects_block_entity_nbt() {
         init_test_registries();
         let mut world = SteelTestWorld::new();
 
-        // Region spans chunk (0,0) and chunk (1,0): x=0..=20 crosses the x=16 chunk border.
+        let mut barrel = Block::new("minecraft:barrel");
+        barrel.nbt = Some(EntityNbt::from_string_values([(
+            "Items".to_string(),
+            "[{Slot:0b,id:\"minecraft:stone\",count:1}]".to_string(),
+        )]));
         world
-            .preload_region([[0, 60, 0], [20, 70, 0]])
-            .expect("preload should succeed");
+            .set_block([0, 64, 0], &barrel)
+            .expect("set_block should succeed");
+
+        let mut nbt = world
+            .get_block([0, 64, 0], &["Items".to_string()])
+            .unwrap()
+            .nbt
+            .expect("barrel should have block entity nbt")
+            .expected_values();
+        let items = nbt.remove("Items").expect("Items key");
+        assert!(
+            items.contains("minecraft:stone"),
+            "expected Items to contain the placed stone, got: {items}"
+        );
+    }
+
+    #[test]
+    fn test_preload_region_loads_chunks_spanning_multiple_blocks() {
+        init_test_registries();
+        let mut world = SteelTestWorld::new();
 
         // get_block/set_block must not have to drive a fresh chunk request afterwards.
         let stone = Block::new("minecraft:stone");

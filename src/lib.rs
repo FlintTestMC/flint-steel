@@ -1,34 +1,4 @@
 //! Flint testing framework integration for `SteelMC`.
-//!
-//! This crate provides implementations of the Flint traits (`FlintAdapter`, `FlintWorld`,
-//! `FlintPlayer`) that allow running automated tests against the `SteelMC` server.
-//!
-//! # Architecture
-//!
-//! This integration uses the **real steel-core World** for testing:
-//! - `SteelTestWorld` wraps an `Arc<World>` with RAM-only storage
-//! - `SteelTestPlayer` uses the real block/item behavior system
-//! - Chunks are created empty on-demand (no disk I/O, no generation)
-//!
-//! This enables 100% code reuse with steel-core and accurate behavior testing.
-//!
-//! # Example
-//!
-//! ```ignore
-//!
-//! // Initialize registry and behaviors (required before creating adapter)
-//! steel_flint::init();
-//!
-//! // Create adapter
-//! let adapter = SteelAdapter::new();
-//!
-//! // Load and run tests
-//! let selector = TestSelector::new("./tests".as_ref()).unwrap();
-//! let specs = selector.load_tests(&TestFilter::all()).unwrap();
-//!
-//! let runner = TestRunner::new(&adapter);
-//! let summary = runner.run_tests(&specs);
-//! ```
 
 mod adapter;
 mod convert;
@@ -45,8 +15,10 @@ pub use world::SteelTestWorld;
 pub use flint_core::{TestLoader, TestRunner};
 
 use std::sync::{Arc, OnceLock};
-use steel_core::behavior;
-use steel_registry::{REGISTRY, Registry};
+use steel_core::behavior::init_behaviors;
+use steel_core::block_entity::init_block_entities;
+use steel_core::entity::init_entities;
+use steel_registry::init_vanilla_registry;
 use tokio::runtime;
 use tokio::runtime::Runtime;
 
@@ -58,39 +30,13 @@ static FLINT_RUNTIME: OnceLock<Arc<Runtime>> = OnceLock::new();
 /// This must be called before creating any test worlds or adapters.
 /// It's safe to call multiple times - subsequent calls are no-ops.
 pub fn init() {
-    // Initialize registry
-    init_registry();
-
-    // Initialize behaviors (requires registry to be initialized)
+    init_vanilla_registry();
     init_behaviors();
+    init_block_entities();
+    init_entities();
 
     // Initialize runtime
     init_runtime();
-}
-
-/// Initialize the `SteelMC` registry.
-fn init_registry() {
-    use std::sync::Once;
-    static INIT: Once = Once::new();
-
-    INIT.call_once(|| {
-        // Use the full Registry which registers all vanilla data
-        let registry = Registry::new_vanilla();
-
-        // Initialize the global registry
-        let _ = REGISTRY.init(registry);
-    });
-}
-
-/// Initialize block and item behaviors.
-fn init_behaviors() {
-    use std::sync::Once;
-    static INIT: Once = Once::new();
-
-    INIT.call_once(|| {
-        // Initialize the global behavior registries
-        behavior::init_behaviors();
-    });
 }
 
 /// Initialize the Tokio runtime for async operations.
