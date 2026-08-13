@@ -1,0 +1,31 @@
+{
+  "name": "cave_air_distinct_negative",
+  "description": "The harness must not report cave air as regular air",
+  "tags": ["mvp", "negative_control", "block"],
+  "setup": {
+    "cleanup": {
+      "region": [[0, 0, 0], [1, 0, 0]]
+    }
+  },
+  "timeline": [
+    {
+      "at": 0,
+      "do": "place",
+      "pos": [0, 0, 0],
+      "block": {"id": "minecraft:cave_air"}
+    },
+    {
+      "at": 0,
+      "do": "place",
+      "pos": [1, 0, 0],
+      "block": {"id": "minecraft:stone"}
+    },
+    {
+      "at": 1,
+      "do": "assert",
+      "checks": [
+        {"pos": [0, 0, 0], "is": {"id": "minecraft:air"}}
+      ]
+    }
+  ]
+}

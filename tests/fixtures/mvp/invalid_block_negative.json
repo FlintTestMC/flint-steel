@@ -1,0 +1,25 @@
+{
+  "name": "invalid_block_negative",
+  "description": "The harness must reject an unknown block before an assertion can hide it",
+  "tags": ["mvp", "negative_control", "block"],
+  "setup": {
+    "cleanup": {
+      "region": [[0, 0, 0], [0, 0, 0]]
+    }
+  },
+  "timeline": [
+    {
+      "at": 0,
+      "do": "place",
+      "pos": [0, 0, 0],
+      "block": {"id": "minecraft:flint_missing_block"}
+    },
+    {
+      "at": 1,
+      "do": "assert",
+      "checks": [
+        {"pos": [0, 0, 0], "is": {"id": "minecraft:air"}}
+      ]
+    }
+  ]
+}

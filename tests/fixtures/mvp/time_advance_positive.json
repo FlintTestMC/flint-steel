@@ -1,0 +1,31 @@
+{
+  "name": "time_advance_positive",
+  "description": "Three Flint ticks advance daytime by exactly three ticks",
+  "tags": ["mvp", "positive_control", "time", "world"],
+  "setup": {
+    "cleanup": {
+      "region": [[0, 0, 0], [0, 0, 0]]
+    },
+    "world": {
+      "time": "0",
+      "weather": "clear",
+      "gamerules": {
+        "minecraft:spawn_mobs": false,
+        "minecraft:advance_time": true,
+        "minecraft:advance_weather": false
+      }
+    }
+  },
+  "timeline": [
+    {
+      "at": 0,
+      "do": "assert",
+      "checks": [{"time": 0}]
+    },
+    {
+      "at": 3,
+      "do": "assert",
+      "checks": [{"time": 3}]
+    }
+  ]
+}

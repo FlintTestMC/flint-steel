@@ -1,0 +1,49 @@
+{
+  "name": "place_fence_positive",
+  "description": "A real player moves, uses an oak fence, places it, and consumes the item",
+  "tags": ["mvp", "positive_control", "player", "interaction", "inventory"],
+  "setup": {
+    "cleanup": {
+      "region": [[0, 0, 0], [0, 1, 0]]
+    },
+    "player": {
+      "game_mode": "Survival"
+    }
+  },
+  "timeline": [
+    {
+      "at": 0,
+      "do": "place",
+      "pos": [0, 0, 0],
+      "block": {"id": "minecraft:stone"}
+    },
+    {
+      "at": 1,
+      "do": "assert",
+      "checks": [
+        {"pos": [0, 0, 0], "is": {"id": "minecraft:stone"}}
+      ]
+    },
+    {
+      "at": 1,
+      "do": "tp",
+      "entity_alias": "player",
+      "pos": [0.5, 3.0, 0.5],
+      "rot": [0.0, 90.0]
+    },
+    {
+      "at": 1,
+      "do": "interact",
+      "item": "minecraft:oak_fence"
+    },
+    {
+      "at": 2,
+      "do": "assert",
+      "checks": [
+        {"pos": [0, 0, 0], "is": {"id": "minecraft:stone"}},
+        {"pos": [0, 1, 0], "is": {"id": "minecraft:oak_fence"}},
+        {"slot": "hotbar1", "is": "empty"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "name": "inventory_positive",
+  "description": "A configured player inventory round-trips through a Flint assertion",
+  "tags": ["mvp", "positive_control", "inventory", "player"],
+  "setup": {
+    "cleanup": {
+      "region": [[0, 0, 0], [0, 0, 0]]
+    },
+    "player": {
+      "game_mode": "Survival"
+    }
+  },
+  "timeline": [
+    {
+      "at": 0,
+      "do": "set_slot",
+      "slot": "hotbar1",
+      "item": "minecraft:cobblestone",
+      "count": 3
+    },
+    {
+      "at": 1,
+      "do": "assert",
+      "checks": [
+        {"slot": "hotbar1", "is": {"id": "minecraft:cobblestone", "count": 3}}
+      ]
+    }
+  ]
+}

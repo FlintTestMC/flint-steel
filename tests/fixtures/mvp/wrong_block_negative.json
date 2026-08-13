@@ -1,0 +1,25 @@
+{
+  "name": "wrong_block_negative",
+  "description": "The harness must reject an intentionally wrong block assertion",
+  "tags": ["mvp", "negative_control", "block"],
+  "setup": {
+    "cleanup": {
+      "region": [[0, 0, 0], [0, 0, 0]]
+    }
+  },
+  "timeline": [
+    {
+      "at": 0,
+      "do": "place",
+      "pos": [0, 0, 0],
+      "block": {"id": "minecraft:stone"}
+    },
+    {
+      "at": 1,
+      "do": "assert",
+      "checks": [
+        {"pos": [0, 0, 0], "is": {"id": "minecraft:dirt"}}
+      ]
+    }
+  ]
+}

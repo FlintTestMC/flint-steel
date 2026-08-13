@@ -1,95 +1,49 @@
-# Getting Started
+# Getting started
 
-This guide gets `flint-steel` running locally against the SteelBenchmark test specs.
+## Prerequisites
 
-## 1. Install Prerequisites
-
-- Rust with the toolchain from `rust-toolchain.toml`
+- Rust nightly from `rust-toolchain.toml`
 - Git
 
-Cargo downloads SteelMC and Flint dependencies from their git repositories during the first build.
-
-## 2. Clone the Repository
+The exact coordinated Steel and `flint-core` commits are pinned in `Cargo.toml` and `Cargo.lock`. Cargo can build them directly. To work on all three repositories together, keep local checkouts beside `flint-steel`, then enable the optional path patches:
 
 ```bash
-git clone https://github.com/FlintTestMC/flint-steel.git
-cd flint-steel
+cp .cargo/config.toml.example .cargo/config.toml
 ```
 
-## 3. Verify the Harness Builds
+Adjust the paths in `.cargo/config.toml` if your checkouts use a different layout. The patch selects source checkouts only; Steel's `test-harness` feature remains declared in `Cargo.toml`.
 
-Run a small local test that does not need the external benchmark specs:
+## Verify the adapter
 
 ```bash
-cargo test --lib test_world_creation
+cargo test --locked --all-targets
 ```
 
-## 4. Add Flint Test Specs
+This includes paired JSON controls. Four supported scenarios must turn green, while three deliberately broken scenarios must turn red for their expected reasons.
 
-Clone SteelBenchmark into the default `./test` directory:
+## Run a test file
 
 ```bash
-git clone https://github.com/FlintTestMC/SteelBenchmark.git test
+cargo run --locked --bin flint-steel -- tests/fixtures/mvp/inventory_positive.json
 ```
 
-To keep the tests somewhere else, set `TEST_PATH`:
+The JSON summary is printed to standard output. A gameplay failure is still printed as JSON, followed by a nonzero process exit.
+Running a file or directory does not create Flint's tag-index cache.
+
+## Run a test repository
 
 ```bash
-TEST_PATH=/path/to/SteelBenchmark cargo test --lib test_run_flint_selected
+git clone https://github.com/FlintTestMC/FlintBenchmark.git FlintBenchmark
+cargo run --locked --bin flint-steel -- FlintBenchmark/tests
 ```
 
-## 5. Configure Test Filtering
+Directories are recursive. An empty directory, incompatible or skipped test, adapter error, or failed assertion makes the command fail.
 
-Optional: copy the example config.
+## Current limits
 
-```bash
-cp flint.toml.example flint.toml
-```
+- Entity summon, movement, and assertions return an unsupported error.
+- Only clear weather is supported.
+- Item data must name registered persistent Steel components and contain valid SNBT values.
+- Block-entity assertions read only the requested NBT paths.
 
-`flint.toml` can select persistent filters:
-
-```toml
-viz_url = "http://localhost:7878"
-
-[filter]
-implemented_only = true
-
-[filter.tags]
-redstone = true
-walls = false
-```
-
-Environment variables override config filters:
-
-```bash
-FLINT_TEST=place_fence cargo test --lib test_run_flint_selected
-FLINT_PATTERN="*fence" cargo test --lib test_run_flint_selected
-FLINT_TAGS=redstone,walls cargo test --lib test_run_flint_selected
-```
-
-## 6. Run the Benchmark Tests
-
-Run the selected Flint tests:
-
-```bash
-cargo test --lib test_run_flint_selected -- --nocapture
-```
-
-Run every loaded benchmark spec:
-
-```bash
-cargo test --lib test_run_all_flint_benchmarks -- --nocapture
-```
-
-The test runner writes a CI summary to `log/flint_summary.json`.
-
-## Failure Links
-
-When a Flint assertion fails, the test output prints an `Open in flint-viz` URL. By default it points at:
-
-```text
-http://localhost:7878
-```
-
-Use `FLINT_VIZ_URL` or `viz_url` in `flint.toml` if your flint-viz instance runs elsewhere.
-The TOML loader also accepts `flint_viz_url` and `FLINT_VIZ_URL`.
+These limits are explicit so unsupported behavior cannot produce a false green result.

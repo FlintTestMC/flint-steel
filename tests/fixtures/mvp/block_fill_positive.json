@@ -1,0 +1,26 @@
+{
+  "name": "block_fill_positive",
+  "description": "A valid fill changes every requested block",
+  "tags": ["mvp", "positive_control", "block", "fill"],
+  "setup": {
+    "cleanup": {
+      "region": [[-1, 0, -1], [1, 1, 1]]
+    }
+  },
+  "timeline": [
+    {
+      "at": 0,
+      "do": "fill",
+      "region": [[0, 0, 0], [1, 0, 0]],
+      "with": {"id": "minecraft:stone"}
+    },
+    {
+      "at": 1,
+      "do": "assert",
+      "checks": [
+        {"pos": [0, 0, 0], "is": {"id": "minecraft:stone"}},
+        {"pos": [1, 0, 0], "is": {"id": "minecraft:stone"}}
+      ]
+    }
+  ]
+}

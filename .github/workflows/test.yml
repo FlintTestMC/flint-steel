@@ -1,8 +1,17 @@
 name: Flint Tests
 
 on:
-  push:
   pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flint-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -10,55 +19,84 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Clone SteelMC
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          repository: Steel-Foundation/SteelMC
+          repository: kdcokenny/SteelMC
+          ref: 36a8e5b40f49eada0a6040c443bbebdce1366eba
           path: SteelMC
+          persist-credentials: false
 
       - name: Checkout flint-steel
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           path: flint-steel
+          persist-credentials: false
 
-      - name: Clone FlintBenchmark
-        uses: actions/checkout@v6
+      - name: Clone flint-core
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          repository: FlintTestMC/FlintBenchmark
-          path: flint/FlintBenchmark
+          repository: kdcokenny/flint-core
+          ref: 7fdac26b820199bed941e1cb0120d06e1ce81952
+          path: flint-core
+          persist-credentials: false
 
       - name: Setup Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@7c8d7d138f5c09cef361f8214cf96882cd029cdb
+        with:
+          toolchain: nightly-2026-07-23
+          components: clippy, rustfmt
 
       - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: |
-            steel/SteelMC -> target
+            flint-steel -> target
 
       - name: Configure SteelMC patch
         working-directory: flint-steel
         run: |
           mkdir -p .cargo
           cat > .cargo/config.toml << 'EOF'
-          [patch."https://github.com/Steel-Foundation/SteelMC.git"]
+          [patch."https://github.com/kdcokenny/SteelMC.git"]
           steel-core     = { path = "../SteelMC/steel-core" }
-          steel-protocol = { path = "../SteelMC/steel-protocol" }
           steel-registry = { path = "../SteelMC/steel-registry" }
           steel-utils    = { path = "../SteelMC/steel-utils" }
+
+          [patch."https://github.com/kdcokenny/flint-core.git"]
+          flint-core = { path = "../flint-core" }
           EOF
 
-      - name: Run flint-steel tests
-        timeout-minutes: 15
+      - name: Check formatting
         working-directory: flint-steel
-        env:
-          TEST_PATH: ${{ github.workspace }}/flint/FlintBenchmark/tests
-        run: cargo test --profile cicd --lib -p flint-steel test_run_all_flint_benchmarks -- --nocapture
+        run: cargo fmt --all --check
 
-      - name: Upload Flint summary
+      - name: Run Clippy
+        working-directory: flint-steel
+        run: cargo clippy --locked --all-targets --all-features -- -D warnings
+
+      - name: Run flint-steel tests
+        working-directory: flint-steel
+        run: cargo test --locked --all-targets -- --test-threads=1
+
+      - name: Verify runner exit contract
+        working-directory: flint-steel
+        run: |
+          mkdir -p results
+          cargo run --locked --bin flint-steel -- tests/fixtures/mvp/place_fence_positive.json \
+            > results/place_fence_positive.json 2> results/place_fence_positive.stderr.log
+          if cargo run --locked --bin flint-steel -- tests/fixtures/mvp/wrong_block_negative.json \
+            > results/wrong_block_negative.json 2> results/wrong_block_negative.stderr.log; then
+            echo "negative control unexpectedly passed"
+            exit 1
+          fi
+
+      - name: Upload runner evidence
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: flint-summary
-          path: steel/SteelMC/flint-steel/log/flint_summary.json
+          name: flint-steel-results
+          path: flint-steel/results
+          if-no-files-found: error
