@@ -16,7 +16,10 @@ use flint_core::test_spec::EntityNbt;
 use flint_core::{BlockPos as FlintBlockPos, FlintPlayer, FlintWorld};
 use rustc_hash::FxHashMap;
 use simdnbt::borrow::read_compound;
-use steel_core::chunk::chunk_request::{ChunkRequestHandle, ChunkRequestState, ChunkTicketKind};
+use steel_core::chunk::chunk_request::{
+    ChunkRequest, ChunkRequestHandle, ChunkRequestState, ChunkTicketKind,
+};
+use steel_core::chunk::chunk_ticket_manager::ChunkTicket;
 use steel_core::chunk::status::ChunkStatus;
 use steel_core::level_data::WorldGenerationSettings;
 use steel_core::world::{LevelReader, World, WorldConfig, WorldStorageConfig};
@@ -139,31 +142,22 @@ impl SteelTestWorld {
         self.chunk_requests.lock().insert(chunk_pos, handle);
     }
 
-    /// Requests the chunk at `chunk_pos` and blocks until it reaches `Full`.
-    ///
-    /// `World::tick_game` does not drive chunk scheduling (in production that
-    /// runs on a separate loop), so this drives scheduling itself via the
-    /// `flint`-gated `ChunkMap::drive_scheduling_for_flint` hook.
-    /// Scheduling must keep being driven until the center generation task is
-    /// spawned: `ChunkGenerationTask::new` reads every neighbour holder in the
-    /// generation radius and panics if one is missing, and those holders are
-    /// only created by ticket propagation across multiple scheduling ticks.
-    /// Once the task is spawned it self-drives sub-layers via `apply_step`.
-    ///
-    /// The returned handle owns the chunk's ticket and must be retained.
-    ///
-    /// # Panics
-    /// Panics if the chunk does not reach `Full` within 30 seconds, or if the
-    /// request becomes disallowed/cancelled. This is a test framework: a
-    /// missing chunk silently corrupts every downstream assertion, so failing
-    /// loudly is correct.
+    /// Requests the chunk at `chunk_pos` with a simulation ticket and blocks
+    /// until it becomes tickable.
     fn drive_chunk_request(&self, chunk_pos: ChunkPos) -> ChunkRequestHandle {
         let chunk_map = &self.world.chunk_map;
 
-        // Ticket-owned request: adds a ticket and lets the normal scheduling /
-        // generation pipeline create the holder and generate it to Full.
-        let handle =
-            chunk_map.request_chunk(chunk_pos, ChunkStatus::Full, ChunkTicketKind::Command);
+        // Simulated ticket: radius 2 => center is entity-ticking, 5x5 loads to
+        // Full, block-ticking readiness (3x3 Full) satisfied at the center.
+        let handle = ChunkRequestHandle::new_with_ticket(
+            chunk_map.clone(),
+            ChunkRequest {
+                status: ChunkStatus::Full,
+                positions: vec![chunk_pos],
+                ticket_kind: ChunkTicketKind::Command,
+            },
+            ChunkTicket::simulated_full_chunks(2),
+        );
 
         let deadline = Instant::now() + Duration::from_secs(30);
 
@@ -171,15 +165,26 @@ impl SteelTestWorld {
             chunk_map.advance_scheduling();
 
             match handle.poll() {
-                ChunkRequestState::Ready => return handle,
+                ChunkRequestState::Ready => break,
                 ChunkRequestState::Cancelled => {
                     panic!("chunk {chunk_pos:?} request was cancelled before reaching Full")
                 }
                 ChunkRequestState::Pending { .. } => thread::sleep(Duration::from_millis(1)),
             }
         }
+        if handle.poll() != ChunkRequestState::Ready {
+            panic!("chunk {chunk_pos:?} did not reach Full status within 30s");
+        }
 
-        panic!("chunk {chunk_pos:?} did not reach Full status within 30s");
+        while Instant::now() < deadline {
+            if chunk_map.is_block_ticking_full_chunk_simulated(chunk_pos) {
+                return handle;
+            }
+            chunk_map.advance_scheduling();
+            thread::sleep(Duration::from_millis(1));
+        }
+
+        panic!("chunk {chunk_pos:?} did not enter tickable snapshot within 30s");
     }
 }
 
