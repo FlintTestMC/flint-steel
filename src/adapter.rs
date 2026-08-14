@@ -26,7 +26,7 @@ impl SteelAdapter {
     pub fn new() -> Self {
         Self {
             info: ServerInfo {
-                minecraft_version: "26.2".to_string(),
+                minecraft_version: steel_utils::MC_VERSION.to_string(),
             },
         }
     }
@@ -243,7 +243,8 @@ mod tests {
                         println!();
                         emitted = true;
                     }
-                    println!("Open in flint-viz: {url}");
+                    let name = spec.name.clone();
+                    println!("[{name}]Open in flint-viz: {url}");
                 }
                 Err(err) => {
                     eprintln!(
