@@ -274,7 +274,7 @@ impl FlintPlayer for SteelTestPlayer {
     }
 
     fn set_game_mode(&mut self, mode: GameMode) -> Result<(), anyhow::Error> {
-        self.player.flint_change_game_mode_state(match mode {
+        self.player.set_game_mode(match mode {
             GameMode::Survival => GameType::Survival,
             GameMode::Creative => GameType::Creative,
             GameMode::Adventure => GameType::Adventure,
