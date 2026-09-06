@@ -80,6 +80,7 @@ impl SteelTestPlayer {
             profile_server: None,
             packet_workers: None,
             chunk_encoding_threads: None,
+            services_server:None,
         });
         let player = Arc::new({
             let p = Player::new(
