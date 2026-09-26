@@ -5,14 +5,12 @@
 //! without real network connections.
 
 use std::any::Any;
-use std::sync;
 use std::sync::Arc;
 
 use flint_core::test_spec::{GameMode, PlayerSlot};
 use flint_core::{FlintPlayer, Item};
 use glam::DVec3;
 use rustc_hash::FxHashMap;
-use steel_core::config::RuntimeConfig;
 use steel_core::entity::Entity;
 use steel_core::inventory::container::Container;
 use steel_core::player::game_mode;
@@ -44,7 +42,7 @@ pub struct SteelTestPlayer {
 
 impl SteelTestPlayer {
     /// Creates a new test player in the given world.
-    pub fn new(world: Arc<World>) -> Self {
+    pub fn new(world: Arc<World>, server: &Arc<Server>) -> Self {
         // Create a test connection
         let connection = FlintConnection::new();
         let test_conn = connection.clone(); // shares inner state via Arc
@@ -59,37 +57,14 @@ impl SteelTestPlayer {
 
         // Create the player with our test connection
         let player_connection = Arc::new(PlayerConnection::Other(Box::new(connection)));
-        let runtime_config = Arc::new(RuntimeConfig {
-            max_players: 20,
-            view_distance: 10,
-            simulation_distance: 10,
-            max_chained_neighbor_updates: -1,
-            online_mode: false,
-            encryption: false,
-            motd: String::new(),
-            use_favicon: false,
-            favicon: String::new(),
-            enforce_secure_chat: false,
-            compression: None,
-            server_links: None,
-            allow_flight: true,
-            auth_server: None,
-            chat_spam_threshold_seconds: 10,
-            command_spam_threshold_seconds: 10,
-            chunk_generation_threads: None,
-            profile_server: None,
-            packet_workers: None,
-            chunk_encoding_threads: None,
-            services_server: None,
-        });
         let player = Arc::new({
             let p = Player::new(
                 game_profile,
                 player_connection,
                 Arc::new(PlayerSession::new(10, 10)),
                 world,
-                sync::Weak::<Server>::new(),
-                runtime_config,
+                Arc::downgrade(server),
+                server.config.clone(),
                 -1, // Negative entity ID for test players
                 ClientInformation::default(),
             );
