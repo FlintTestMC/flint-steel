@@ -17,7 +17,7 @@ use steel_core::entity::Entity;
 use steel_core::inventory::container::Container;
 use steel_core::player::game_mode;
 use steel_core::player::player_inventory::PlayerInventory;
-use steel_core::player::{ClientInformation, GameProfile, Player, PlayerConnection};
+use steel_core::player::{ClientInformation, GameProfile, Player, PlayerConnection, PlayerSession};
 use steel_core::server::Server;
 use steel_core::world::{ClipBlockShape, ClipFluid, World};
 use steel_registry::item_stack::ItemStack;
@@ -80,12 +80,13 @@ impl SteelTestPlayer {
             profile_server: None,
             packet_workers: None,
             chunk_encoding_threads: None,
-            services_server:None,
+            services_server: None,
         });
         let player = Arc::new({
             let p = Player::new(
                 game_profile,
                 player_connection,
+                Arc::new(PlayerSession::new(10, 10)),
                 world,
                 sync::Weak::<Server>::new(),
                 runtime_config,

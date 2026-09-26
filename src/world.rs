@@ -16,12 +16,9 @@ use flint_core::test_spec::EntityNbt;
 use flint_core::{BlockPos as FlintBlockPos, FlintPlayer, FlintWorld};
 use rustc_hash::FxHashMap;
 use simdnbt::borrow::read_compound;
-use steel_core::chunk::chunk_request::{
-    ChunkRequest, ChunkRequestHandle, ChunkRequestState, ChunkTicketKind,
-};
-use steel_core::chunk::chunk_ticket_manager::ChunkTicket;
+use steel_core::chunk::chunk_request::{ChunkRequestHandle, ChunkRequestState, ChunkTicketKind};
 use steel_core::chunk::status::ChunkStatus;
-use steel_core::level_data::WorldGenerationSettings;
+use steel_core::level_data::{GameTimeSource, WorldGenerationSettings};
 use steel_core::world::{LevelReader, World, WorldConfig, WorldStorageConfig};
 use steel_core::worldgen::{ChunkGeneratorType, EmptyChunkGenerator};
 use steel_registry::vanilla_dimension_types::OVERWORLD;
@@ -89,6 +86,7 @@ impl SteelTestWorld {
             sea_level: 63,
             default_gamemode: GameType::Survival,
             difficulty: Difficulty::Normal,
+            game_time_source: GameTimeSource::Primary,
         };
 
         let generation_pool = Arc::new(
@@ -147,17 +145,12 @@ impl SteelTestWorld {
     fn drive_chunk_request(&self, chunk_pos: ChunkPos) -> ChunkRequestHandle {
         let chunk_map = &self.world.chunk_map;
 
-        // Simulated ticket: radius 2 => center is entity-ticking, 5x5 loads to
-        // Full, block-ticking readiness (3x3 Full) satisfied at the center.
-        let handle = ChunkRequestHandle::new_with_ticket(
-            chunk_map.clone(),
-            ChunkRequest {
-                status: ChunkStatus::Full,
-                positions: vec![chunk_pos],
-                ticket_kind: ChunkTicketKind::Command,
-            },
-            ChunkTicket::simulated_full_chunks(2),
-        );
+        let handle =
+            chunk_map.request_chunk(chunk_pos, ChunkStatus::Full, ChunkTicketKind::Command);
+        // Ender pearl ticket is the only public simulated ticket: radius 2 =>
+        // center is entity-ticking, block-ticking readiness (3x3 Full) at center.
+        // ponytail: timed ticket, refreshed every `do_tick`; add a public forced ticket in steel if that gets messy
+        chunk_map.place_ender_pearl_ticket(chunk_pos);
 
         let deadline = Instant::now() + Duration::from_secs(30);
 
@@ -188,6 +181,15 @@ impl SteelTestWorld {
     }
 }
 
+impl Drop for SteelTestWorld {
+    fn drop(&mut self) {
+        // Worldgen tasks for outer-ring chunks outlive the test and panic with
+        // "World has been dropped", aborting the whole test process.
+        // ponytail: leaks each test world; drain generation on drop if steel exposes an idle check
+        std::mem::forget(Arc::clone(&self.world));
+    }
+}
+
 impl Default for SteelTestWorld {
     fn default() -> Self {
         Self::new()
@@ -197,6 +199,11 @@ impl Default for SteelTestWorld {
 impl FlintWorld for SteelTestWorld {
     fn do_tick(&mut self) -> Result<(), anyhow::Error> {
         let tick_count = self.tick.fetch_add(1, Ordering::SeqCst);
+
+        // Keep timed simulation tickets from expiring.
+        for &pos in self.chunk_requests.lock().keys() {
+            self.world.chunk_map.place_ender_pearl_ticket(pos);
+        }
 
         // Run a real world tick
         // Note: For testing we run with `runs_normally = true`
