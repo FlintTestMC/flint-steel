@@ -20,6 +20,7 @@ use simdnbt::borrow::read_compound;
 use steel_core::chunk::chunk_request::{ChunkRequestHandle, ChunkRequestState, ChunkTicketKind};
 use steel_core::chunk::status::ChunkStatus;
 use steel_core::config::{ResolvedDomainConfig, RuntimeConfig};
+use steel_core::entity::damage::DamageHistory;
 use steel_core::level_data::{GameTimeSource, WorldGenerationSettings};
 use steel_core::permission::PermissionSubjectIndex;
 use steel_core::server::{Server, test_server_with_worlds_and_config};
@@ -74,8 +75,12 @@ impl SteelTestWorld {
 
         let dim_id = Identifier::vanilla_static("overworld");
 
+        // Server takes ownership; world only holds a Weak ref.
+        let damage_history = Arc::new(DamageHistory::default());
+
         // Create world with RAM-only storage
         let config = WorldConfig {
+            damage_history: Arc::clone(&damage_history),
             storage: WorldStorageConfig::RamOnly,
             level_data_path: None,
             generator: Arc::new(ChunkGeneratorType::Empty(EmptyChunkGenerator::new())),
@@ -144,6 +149,7 @@ impl SteelTestWorld {
             )
             .await
             .expect("Failed to create test server");
+            drop(damage_history);
             (world, server)
         });
 
@@ -200,7 +206,7 @@ impl SteelTestWorld {
         let deadline = Instant::now() + Duration::from_secs(30);
 
         while Instant::now() < deadline {
-            chunk_map.advance_scheduling();
+            chunk_map.flint_advance_scheduling();
 
             match handle.poll() {
                 ChunkRequestState::Ready => break,
@@ -218,7 +224,7 @@ impl SteelTestWorld {
             if chunk_map.is_block_ticking_full_chunk_simulated(chunk_pos) {
                 return handle;
             }
-            chunk_map.advance_scheduling();
+            chunk_map.flint_advance_scheduling();
             thread::sleep(Duration::from_millis(1));
         }
 
