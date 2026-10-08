@@ -7,6 +7,7 @@
 use crate::world::SteelTestWorld;
 use flint_core::{FlintAdapter, FlintWorld, ServerInfo};
 use steel_core::behavior::{BLOCK_BEHAVIORS, ITEM_BEHAVIORS};
+use steel_core::entity::ENTITIES;
 use steel_registry::{REGISTRY, RegistryExt};
 
 /// Adapter for running Flint tests against `SteelMC`.
@@ -59,6 +60,7 @@ pub fn get_implemented_blocks() -> Vec<String> {
     }
     registered_block_ids
 }
+
 /// Returns IDs of items with a non-default, non-block-item behavior.
 pub fn get_implemented_items() -> Vec<String> {
     let mut registered_block_ids: Vec<String> = Vec::new();
@@ -70,6 +72,15 @@ pub fn get_implemented_items() -> Vec<String> {
         }
     }
     registered_block_ids
+}
+
+/// Returns IDs of items with a non-default, non-block-item behavior.
+pub fn get_implemented_entities() -> Vec<String> {
+    let mut registered_entity_ids: Vec<String> = Vec::new();
+    for id in ENTITIES.get_implemented().enumerate() {
+        registered_entity_ids.push(id.1.key.to_string());
+    }
+    registered_entity_ids
 }
 
 #[cfg(test)]
@@ -84,7 +95,6 @@ mod tests {
     use std::fs;
     use std::path::PathBuf;
     use std::sync::Arc;
-    use steel_registry::RegistryExt;
 
     #[derive(serde::Deserialize, Default)]
     struct FlintConfig {
@@ -149,6 +159,7 @@ mod tests {
                 if filter.and_then(|f| f.implemented_only).unwrap_or(false) {
                     let mut ids = get_implemented_items();
                     ids.extend(get_implemented_blocks());
+                    ids.extend(get_implemented_entities());
                     Some(ids)
                 } else {
                     filter.and_then(|f| {
