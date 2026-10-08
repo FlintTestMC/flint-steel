@@ -81,7 +81,7 @@ mod tests {
     use std::env::var;
     use std::fs;
     use std::path::PathBuf;
-    use std::sync::Arc;≈
+    use std::sync::Arc;
     use steel_registry::{RegistryExt};
 
     #[derive(serde::Deserialize, Default)]

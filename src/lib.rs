@@ -1,6 +1,6 @@
 //! Flint testing framework integration for `SteelMC`.
 
-mod adapter;
+pub mod adapter;
 mod convert;
 mod player;
 /// Test connection implementation for Flint tests.

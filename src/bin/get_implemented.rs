@@ -1,6 +1,7 @@
+/// small util
 use std::process::ExitCode;
 use anyhow::{Context, Result, bail};
-use super::adapter;
+use flint_steel::adapter::get_implemented_blocks;
 
 fn main() -> ExitCode {
     match run() {
@@ -13,6 +14,9 @@ fn main() -> ExitCode {
 }
 
 fn run() -> Result<()> {
-    for blocks in implemented
+    for block in get_implemented_blocks()
+    {
+        println!("{}", block);
+    }
     Ok(())
 }
