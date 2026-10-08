@@ -5,7 +5,8 @@
 //! World implementation.
 
 use flint_core::{FlintAdapter, FlintWorld, ServerInfo};
-
+use steel_core::behavior::{BLOCK_BEHAVIORS, ITEM_BEHAVIORS};
+use steel_registry::{RegistryExt, REGISTRY};
 use crate::world::SteelTestWorld;
 
 /// Adapter for running Flint tests against `SteelMC`.
@@ -48,6 +49,27 @@ impl FlintAdapter for SteelAdapter {
     }
 }
 
+pub fn get_implemented_blocks() -> Vec<String> {
+    let mut registered_block_ids: Vec<String> = Vec::new();
+    for (id, behavior) in BLOCK_BEHAVIORS.get_behaviors().iter().enumerate() {
+        if !behavior.type_name().ends_with("DefaultBlockBehavior") {
+            registered_block_ids.push(REGISTRY.blocks.by_id(id).unwrap().key.to_string());
+        }
+    }
+    registered_block_ids
+}
+pub fn get_implemented_items() -> Vec<String> {
+    let mut registered_block_ids: Vec<String> = Vec::new();
+    for (id, behavior) in ITEM_BEHAVIORS.get_behaviors().iter().enumerate() {
+        if !behavior.type_name().ends_with("DefaultItemBehavior")
+            && !behavior.type_name().ends_with("BlockItem")
+        {
+            registered_block_ids.push(REGISTRY.items.by_id(id).unwrap().key.to_string());
+        }
+    }
+    registered_block_ids
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -59,9 +81,8 @@ mod tests {
     use std::env::var;
     use std::fs;
     use std::path::PathBuf;
-    use std::sync::Arc;
-    use steel_core::behavior::{BLOCK_BEHAVIORS, ITEM_BEHAVIORS};
-    use steel_registry::{REGISTRY, RegistryExt};
+    use std::sync::Arc;≈
+    use steel_registry::{RegistryExt};
 
     #[derive(serde::Deserialize, Default)]
     struct FlintConfig {
@@ -254,27 +275,6 @@ mod tests {
                 }
             }
         }
-    }
-
-    fn get_implemented_blocks() -> Vec<String> {
-        let mut registered_block_ids: Vec<String> = Vec::new();
-        for (id, behavior) in BLOCK_BEHAVIORS.get_behaviors().iter().enumerate() {
-            if !behavior.type_name().ends_with("DefaultBlockBehavior") {
-                registered_block_ids.push(REGISTRY.blocks.by_id(id).unwrap().key.to_string());
-            }
-        }
-        registered_block_ids
-    }
-    fn get_implemented_items() -> Vec<String> {
-        let mut registered_block_ids: Vec<String> = Vec::new();
-        for (id, behavior) in ITEM_BEHAVIORS.get_behaviors().iter().enumerate() {
-            if !behavior.type_name().ends_with("DefaultItemBehavior")
-                && !behavior.type_name().ends_with("BlockItem")
-            {
-                registered_block_ids.push(REGISTRY.items.by_id(id).unwrap().key.to_string());
-            }
-        }
-        registered_block_ids
     }
 
     #[test]
