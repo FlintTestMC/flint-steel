@@ -6,10 +6,10 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  # Steel commit this adapter is built against. An adapter PR for a breaking Steel PR points
-  # this at that PR's head (fork + sha); bump to the Steel master sha once it is merged.
+  # Steel to build against. Defaults to master; an adapter PR for a breaking Steel PR points
+  # this at that PR's branch/sha (fork allowed) and resets it to master before merge.
   STEEL_REPO: Steel-Foundation/SteelMC
-  STEEL_REF: f3d345146b9849aaf57123667ca3bbd18912f962
+  STEEL_REF: master
 
 jobs:
   test:
