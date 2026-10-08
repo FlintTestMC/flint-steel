@@ -1,22 +1,25 @@
-/// small util
+//! Prints all blocks or items with a non-default behavior implemented in `SteelMC`.
 use std::process::ExitCode;
-use anyhow::{Context, Result, bail};
-use flint_steel::adapter::get_implemented_blocks;
+
+use flint_steel::adapter::{get_implemented_blocks, get_implemented_items};
 
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(error) => {
-            eprintln!("{error:#}");
-            ExitCode::FAILURE
+    let ids = match std::env::args().nth(1).as_deref() {
+        Some("blocks") => {
+            flint_steel::init();
+            get_implemented_blocks()
         }
+        Some("items") => {
+            flint_steel::init();
+            get_implemented_items()
+        }
+        _ => {
+            eprintln!("usage: steel-implemented <blocks|items>");
+            return ExitCode::FAILURE;
+        }
+    };
+    for id in ids {
+        println!("{id}");
     }
-}
-
-fn run() -> Result<()> {
-    for block in get_implemented_blocks()
-    {
-        println!("{}", block);
-    }
-    Ok(())
+    ExitCode::SUCCESS
 }

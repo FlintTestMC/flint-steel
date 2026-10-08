@@ -4,10 +4,10 @@
 //! allowing the Flint testing framework to create test worlds using the real steel-core
 //! World implementation.
 
+use crate::world::SteelTestWorld;
 use flint_core::{FlintAdapter, FlintWorld, ServerInfo};
 use steel_core::behavior::{BLOCK_BEHAVIORS, ITEM_BEHAVIORS};
-use steel_registry::{RegistryExt, REGISTRY};
-use crate::world::SteelTestWorld;
+use steel_registry::{REGISTRY, RegistryExt};
 
 /// Adapter for running Flint tests against `SteelMC`.
 ///
@@ -49,6 +49,7 @@ impl FlintAdapter for SteelAdapter {
     }
 }
 
+/// Returns IDs of blocks with a non-default behavior.
 pub fn get_implemented_blocks() -> Vec<String> {
     let mut registered_block_ids: Vec<String> = Vec::new();
     for (id, behavior) in BLOCK_BEHAVIORS.get_behaviors().iter().enumerate() {
@@ -58,6 +59,7 @@ pub fn get_implemented_blocks() -> Vec<String> {
     }
     registered_block_ids
 }
+/// Returns IDs of items with a non-default, non-block-item behavior.
 pub fn get_implemented_items() -> Vec<String> {
     let mut registered_block_ids: Vec<String> = Vec::new();
     for (id, behavior) in ITEM_BEHAVIORS.get_behaviors().iter().enumerate() {
@@ -82,7 +84,7 @@ mod tests {
     use std::fs;
     use std::path::PathBuf;
     use std::sync::Arc;
-    use steel_registry::{RegistryExt};
+    use steel_registry::RegistryExt;
 
     #[derive(serde::Deserialize, Default)]
     struct FlintConfig {
