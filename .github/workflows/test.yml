@@ -6,6 +6,10 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  # Steel commit this adapter is built against. An adapter PR for a breaking Steel PR points
+  # this at that PR's head (fork + sha); bump to the Steel master sha once it is merged.
+  STEEL_REPO: Steel-Foundation/SteelMC
+  STEEL_REF: f3d345146b9849aaf57123667ca3bbd18912f962
 
 jobs:
   test:
@@ -14,7 +18,8 @@ jobs:
       - name: Clone SteelMC
         uses: actions/checkout@v6
         with:
-          repository: Steel-Foundation/SteelMC
+          repository: ${{ env.STEEL_REPO }}
+          ref: ${{ env.STEEL_REF }}
           path: SteelMC
 
       - name: Checkout flint-steel
