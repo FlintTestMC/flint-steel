@@ -34,7 +34,9 @@ jobs:
           path: flint/FlintBenchmark
 
       - name: Setup Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-08-21
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
