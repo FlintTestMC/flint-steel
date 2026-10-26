@@ -1,6 +1,5 @@
-:::caution
-This project is now merged directly into [SteelMC](https://github.com/Steel-Foundation/SteelMC)
-:::
+> [!CAUTION]
+> This project is now merged directly into [SteelMC](https://github.com/Steel-Foundation/SteelMC)
 
 # flint-steel
 
