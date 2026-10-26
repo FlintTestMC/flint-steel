@@ -35,7 +35,7 @@ text_components = { git = "https://github.com/Steel-Foundation/TextComponents.gi
 flint-core = { git = "https://github.com/FlintTestMC/flint-core.git", rev = "v1.2.0" }
 
 # Async
-tokio = { version = "1.49", features = [
+tokio = { version = "1.54.1", features = [
     "macros",
     "net",
     "rt-multi-thread",
@@ -46,7 +46,7 @@ tokio = { version = "1.49", features = [
     "time",
     "signal",
 ] }
-futures = "0.3.31"
+futures = "0.3.34"
 
 # Logging
 tracing = "0.1"

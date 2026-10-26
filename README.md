@@ -1,3 +1,7 @@
+:::caution
+This project is now merged directly into [SteelMC](https://github.com/Steel-Foundation/SteelMC)
+:::
+
 # flint-steel
 
 Flint testing framework integration for [SteelMC](https://github.com/Steel-Foundation/SteelMC). This crate implements the Flint traits (`FlintAdapter`, `FlintWorld`, `FlintPlayer`) so that automated Minecraft tests run against the real SteelMC server logic — no mocks, 100% code reuse with production behavior.
